@@ -6,6 +6,22 @@ use tokio::time;
 use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter, PeripheralProperties};
 use btleplug::platform::Manager;
 
+struct State {
+    rssi: i16,
+    scan: u16
+}
+
+impl State {
+    fn new(rssi: i16, scan: u16) -> State {
+        State { rssi, scan }
+    }
+
+    fn update(&mut self, rssi: i16, scan: u16) {
+        self.rssi = rssi;
+        self.scan = scan;
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
@@ -35,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 let properties = peripheral.properties().await?.unwrap();
                 if let Some(signature) = find_signature(&properties) {
                     if let Some(rssi) = properties.rssi {
-                        state.entry(signature).and_modify(|r| *r = rssi).or_insert(rssi);
+                        state.entry(signature).and_modify(|s: &mut State| s.update(rssi, scans)).or_insert(State::new(rssi, scans));
                     }
                 }
             }
@@ -45,8 +61,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .expect("Can't stop scan");
         println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
         println!("[{}] State:", scans);
-        for (signature, rssi) in state.iter() {
-            println!("{:>32}: {}", signature, rssi);
+        for (signature, state) in state.iter() {
+            println!("{:>32}: {:>4}, {:>5}", signature, state.rssi, state.scan);
         }
     }
 }
