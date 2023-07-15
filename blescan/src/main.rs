@@ -17,8 +17,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if adapter_list.is_empty() {
         eprintln!("No Bluetooth adapters found");
     }
+    let adapter = &adapter_list[0];
 
-    for adapter in adapter_list.iter() {
+    loop {
         println!("Starting scan on {}...", adapter.adapter_info().await?);
         adapter
             .start_scan(ScanFilter::default())
@@ -35,9 +36,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!(
                     "Peripheral {:?}", properties
                 );
-                
             }
         }
+        adapter
+            .stop_scan().await
+            .expect("Can't stop scan");
+        println!("Stopped scan on {}", adapter.adapter_info().await?);
     }
-    Ok(())
 }
