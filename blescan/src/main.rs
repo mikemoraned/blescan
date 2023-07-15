@@ -45,6 +45,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .stop_scan().await
             .expect("Can't stop scan");
         println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
-        println!("[{}] State: {:?}", scans, state);
+        println!("[{}] State:", scans);
+        for (signature, rssi) in state.iter() {
+            println!("\t{}: {}", signature, rssi);
+        }
     }
 }
