@@ -3,7 +3,7 @@ use std::error::Error;
 use std::time::Duration;
 use tokio::time;
 
-use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter};
+use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter, PeripheralProperties};
 use btleplug::platform::Manager;
 
 #[tokio::main]
@@ -33,9 +33,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         } else {
             for peripheral in peripherals.iter() {
                 let properties = peripheral.properties().await?.unwrap();
-                if let Some(local_name) = properties.local_name {
+                if let Some(signature) = find_signature(&properties) {
                     if let Some(rssi) = properties.rssi {
-                        let signature = local_name.clone();
                         state.entry(signature).and_modify(|r| *r = rssi).or_insert(rssi);
                     }
                 }
@@ -49,5 +48,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         for (signature, rssi) in state.iter() {
             println!("\t{}: {}", signature, rssi);
         }
+    }
+}
+
+fn find_signature(properties: &PeripheralProperties) -> Option<String> {
+    if let Some(local_name) = &properties.local_name {
+        Some(local_name.clone())
+    } else {
+        None
     }
 }
