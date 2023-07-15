@@ -37,29 +37,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             CentralEvent::DeviceDiscovered(id) => {
                 println!("DeviceDiscovered: {:?}", id);
             }
-            CentralEvent::DeviceConnected(id) => {
-                println!("DeviceConnected: {:?}", id);
-            }
-            CentralEvent::DeviceDisconnected(id) => {
-                println!("DeviceDisconnected: {:?}", id);
-            }
-            CentralEvent::ManufacturerDataAdvertisement {
-                id,
-                manufacturer_data,
-            } => {
-                println!(
-                    "ManufacturerDataAdvertisement: {:?}, {:?}",
-                    id, manufacturer_data
-                );
-            }
-            CentralEvent::ServiceDataAdvertisement { id, service_data } => {
-                println!("ServiceDataAdvertisement: {:?}, {:?}", id, service_data);
-            }
-            CentralEvent::ServicesAdvertisement { id, services } => {
-                let services: Vec<String> =
-                    services.into_iter().map(|s| s.to_short_string()).collect();
-                println!("ServicesAdvertisement: {:?}, {:?}", id, services);
-            }
             _ => {}
         }
     }
