@@ -1,6 +1,4 @@
-// See the "macOS permissions note" in README.md before running this on macOS
-// Big Sur or later.
-
+use std::collections::HashSet;
 use std::error::Error;
 use std::time::Duration;
 use tokio::time;
@@ -19,28 +17,33 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     let adapter = &adapter_list[0];
 
+    let mut state : HashSet<String> = HashSet::new();
     loop {
         println!("Starting scan on {}...", adapter.adapter_info().await?);
         adapter
             .start_scan(ScanFilter::default())
             .await
             .expect("Can't scan BLE adapter for connected devices...");
-        time::sleep(Duration::from_secs(10)).await;
+        time::sleep(Duration::from_secs(1)).await;
         let peripherals = adapter.peripherals().await?;
         if peripherals.is_empty() {
             eprintln!("->>> BLE peripheral devices were not found, sorry. Exiting...");
         } else {
-            // All peripheral devices in range
             for peripheral in peripherals.iter() {
                 let properties = peripheral.properties().await?.unwrap();
-                println!(
-                    "Peripheral {:?}", properties
-                );
+                if let Some(local_name) = properties.local_name {
+                    let signature = local_name.clone();
+                    if !state.contains(&signature) {
+                        state.insert(signature);
+                        println!("New Peripheral {:?}", local_name);
+                    }
+                }
             }
         }
         adapter
             .stop_scan().await
             .expect("Can't stop scan");
         println!("Stopped scan on {}", adapter.adapter_info().await?);
+        println!("State: {:?}", state);
     }
 }
