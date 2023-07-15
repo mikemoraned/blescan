@@ -46,7 +46,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
         println!("[{}] State:", scans);
         for (signature, rssi) in state.iter() {
-            println!("\t{}: {}", signature, rssi);
+            println!("{:>32}: {}", signature, rssi);
         }
     }
 }
