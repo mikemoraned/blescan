@@ -1,43 +1,42 @@
 // See the "macOS permissions note" in README.md before running this on macOS
 // Big Sur or later.
 
-use btleplug::api::{bleuuid::BleUuid, Central, CentralEvent, Manager as _, ScanFilter};
-use btleplug::platform::{Adapter, Manager};
-use futures::stream::StreamExt;
 use std::error::Error;
+use std::time::Duration;
+use tokio::time;
 
-async fn get_central(manager: &Manager) -> Adapter {
-    let adapters = manager.adapters().await.unwrap();
-    adapters.into_iter().nth(0).unwrap()
-}
+use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter};
+use btleplug::platform::Manager;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
 
     let manager = Manager::new().await?;
+    let adapter_list = manager.adapters().await?;
+    if adapter_list.is_empty() {
+        eprintln!("No Bluetooth adapters found");
+    }
 
-    // get the first bluetooth adapter
-    // connect to the adapter
-    let central = get_central(&manager).await;
-
-    // Each adapter has an event stream, we fetch via events(),
-    // simplifying the type, this will return what is essentially a
-    // Future<Result<Stream<Item=CentralEvent>>>.
-    let mut events = central.events().await?;
-
-    // start scanning for devices
-    central.start_scan(ScanFilter::default()).await?;
-
-    // Print based on whatever the event receiver outputs. Note that the event
-    // receiver blocks, so in a real program, this should be run in its own
-    // thread (not task, as this library does not yet use async channels).
-    while let Some(event) = events.next().await {
-        match event {
-            CentralEvent::DeviceDiscovered(id) => {
-                println!("DeviceDiscovered: {:?}", id);
+    for adapter in adapter_list.iter() {
+        println!("Starting scan on {}...", adapter.adapter_info().await?);
+        adapter
+            .start_scan(ScanFilter::default())
+            .await
+            .expect("Can't scan BLE adapter for connected devices...");
+        time::sleep(Duration::from_secs(10)).await;
+        let peripherals = adapter.peripherals().await?;
+        if peripherals.is_empty() {
+            eprintln!("->>> BLE peripheral devices were not found, sorry. Exiting...");
+        } else {
+            // All peripheral devices in range
+            for peripheral in peripherals.iter() {
+                let properties = peripheral.properties().await?.unwrap();
+                println!(
+                    "Peripheral {:?}", properties
+                );
+                
             }
-            _ => {}
         }
     }
     Ok(())
