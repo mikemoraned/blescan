@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::error::Error;
 use std::time::Duration;
 use tokio::time;
@@ -17,9 +17,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     let adapter = &adapter_list[0];
 
-    let mut state : HashSet<String> = HashSet::new();
+    let mut state = HashMap::new();
+    let mut scans = 0;
     loop {
-        println!("Starting scan on {}...", adapter.adapter_info().await?);
+        scans += 1;        
+        println!("Starting scan {} on {}...", scans, adapter.adapter_info().await?);
         adapter
             .start_scan(ScanFilter::default())
             .await
@@ -32,10 +34,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             for peripheral in peripherals.iter() {
                 let properties = peripheral.properties().await?.unwrap();
                 if let Some(local_name) = properties.local_name {
-                    let signature = local_name.clone();
-                    if !state.contains(&signature) {
-                        state.insert(signature);
-                        println!("New Peripheral {:?}", local_name);
+                    if let Some(rssi) = properties.rssi {
+                        let signature = local_name.clone();
+                        state.entry(signature).and_modify(|r| *r = rssi).or_insert(rssi);
                     }
                 }
             }
@@ -43,7 +44,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         adapter
             .stop_scan().await
             .expect("Can't stop scan");
-        println!("Stopped scan on {}", adapter.adapter_info().await?);
-        println!("State: {:?}", state);
+        println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
+        println!("[{}] State: {:?}", scans, state);
     }
 }
