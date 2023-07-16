@@ -1,0 +1,14 @@
+[workspace]
+members = ["shared"]
+
+[workspace.package]
+authors = ["Mike Moran"]
+edition = "2021"
+repository = "https://github.com/mikemoraned/blescan"
+license = "Apache-2.0"
+keywords = []
+rust-version = "1.71"
+
+[workspace.dependencies]
+anyhow = "1.0.71"
+serde = "1.0.171"
