@@ -6,6 +6,22 @@ use tokio::time;
 use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter, PeripheralProperties};
 use btleplug::platform::Manager;
 
+struct State {
+    rssi: i16,
+    scan: u16
+}
+
+impl State {
+    fn new(rssi: i16, scan: u16) -> State {
+        State { rssi, scan }
+    }
+
+    fn update(&mut self, rssi: i16, scan: u16) {
+        self.rssi = rssi;
+        self.scan = scan;
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
@@ -35,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 let properties = peripheral.properties().await?.unwrap();
                 if let Some(signature) = find_signature(&properties) {
                     if let Some(rssi) = properties.rssi {
-                        state.entry(signature).and_modify(|r| *r = rssi).or_insert(rssi);
+                        state.entry(signature).and_modify(|s: &mut State| s.update(rssi, scans)).or_insert(State::new(rssi, scans));
                     }
                 }
             }
@@ -45,8 +61,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .expect("Can't stop scan");
         println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
         println!("[{}] State:", scans);
-        for (signature, rssi) in state.iter() {
-            println!("{:>32}: {}", signature, rssi);
+        for (signature, state) in state.iter() {
+            println!("{:>32}: {:>4}, {:>5}, {:>5}", signature, state.rssi, state.scan, scans - state.scan);
         }
     }
 }
@@ -54,20 +70,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
 fn find_signature(properties: &PeripheralProperties) -> Option<String> {
     if let Some(local_name) = &properties.local_name {
         Some(local_name.clone())
-    } else { 
-        if !&properties.manufacturer_data.is_empty() {
-            let mut context = md5::Context::new();
-            let mut manufacturer_ids: Vec<&u16> = properties.manufacturer_data.keys().collect();
-            manufacturer_ids.sort();
-            for manufacturer_id in manufacturer_ids {
-                let arbitrary_data = properties.manufacturer_data[manufacturer_id].clone();
-                context.consume(arbitrary_data);
-            }
-            let digest = context.compute();
-            Some(format!("{:x}", digest))
+    } else if !&properties.manufacturer_data.is_empty() {
+        let mut context = md5::Context::new();
+        let mut manufacturer_ids: Vec<&u16> = properties.manufacturer_data.keys().collect();
+        manufacturer_ids.sort();
+        for manufacturer_id in manufacturer_ids {
+            let arbitrary_data = properties.manufacturer_data[manufacturer_id].clone();
+            context.consume(arbitrary_data);
         }
-        else {
-            None
-        }
+        let digest = context.compute();
+        Some(format!("{:x}", digest))
+    }
+    else {
+        None
     }
 }
