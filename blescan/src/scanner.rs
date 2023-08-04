@@ -83,50 +83,6 @@ impl Scanner {
     }
 }
 
-async fn get_adapter() -> Result<Adapter, Box<dyn Error>> {
-    let manager = Manager::new().await?;
-    let mut adapter_list = manager.adapters().await?;
-    if adapter_list.is_empty() {
-        eprintln!("No Bluetooth adapters found");
-    }
-    Ok(adapter_list.pop().unwrap())
-}
-
-async fn scan(scans: &mut u16, state: &mut HashMap<String, State>, adapter: &Adapter) -> Result<(), Box<dyn Error>> {
-    *scans += 1;        
-    println!("Starting scan {} on {}...", scans, adapter.adapter_info().await?);
-    adapter
-        .start_scan(ScanFilter::default())
-        .await
-        .expect("Can't scan BLE adapter for connected devices...");
-    time::sleep(Duration::from_secs(1)).await;
-    let peripherals = adapter.peripherals().await?;
-    if peripherals.is_empty() {
-        eprintln!("->>> BLE peripheral devices were not found, sorry. Exiting...");
-    } else {
-        for peripheral in peripherals.iter() {
-            let properties = peripheral.properties().await?.unwrap();
-            if let Some(signature) = find_signature(&properties) {
-                if let Some(rssi) = properties.rssi {
-                    state.entry(signature)
-                        .and_modify(|s: &mut State| s.update(rssi, *scans))
-                        .or_insert(State::new(rssi, *scans));
-                }
-            }
-        }
-    }
-    adapter
-        .stop_scan().await
-        .expect("Can't stop scan");
-    println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
-    println!("[{}] State:", scans);
-    for (signature, state) in state.iter() {
-        println!("{:>32}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, *scans - state.scan);
-    }
-
-    Ok(())
-}
-
 fn find_signature(properties: &PeripheralProperties) -> Option<String> {
     if let Some(local_name) = &properties.local_name {
         Some(local_name.clone())
