@@ -25,31 +25,21 @@ impl State {
 
 pub struct Scanner {
     state : HashMap<String, State>,
-    scans : u16,
-    manager: Manager
+    scans : u16
 }
 
 impl Scanner {
     pub async fn new() -> Result<Scanner, Box<dyn Error>> {
         let state = HashMap::new();
         let scans = 0;
-
-        let manager: Manager = Manager::new().await?;
         
-        Ok(Scanner { state, scans, manager })
+        Ok(Scanner { state, scans })
     }
-
-    // async fn get_adapter(&mut self) -> Result<&Adapter, Box<dyn Error>> {
-    //     let adapter_list = self.manager.adapters().await?;
-    //     if adapter_list.is_empty() {
-    //         eprintln!("No Bluetooth adapters found");
-    //     }
-    //     Ok(&adapter_list[0])
-    // }
 
     pub async fn scan(&mut self) -> Result<(), Box<dyn Error>>{
         self.scans += 1;  
-        let adapter_list = self.manager.adapters().await?;
+        let manager = Manager::new().await?;
+        let adapter_list = manager.adapters().await?;
         if adapter_list.is_empty() {
             eprintln!("No Bluetooth adapters found");
         }
