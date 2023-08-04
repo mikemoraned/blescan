@@ -29,21 +29,32 @@ impl State {
 async fn main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
 
-    let manager = Manager::new().await?;
-    let adapter_list = manager.adapters().await?;
-    if adapter_list.is_empty() {
-        eprintln!("No Bluetooth adapters found");
-    }
-    let adapter = &adapter_list[0];
+    // let manager = Box::new(Manager::new().await?);
+    // let adapter_list = manager.adapters().await?;
+    // if adapter_list.is_empty() {
+    //     eprintln!("No Bluetooth adapters found");
+    // }
+    // let adapter = &adapter_list[0];
+
+    let adapter = get_adapter().await?;
 
     let mut state: HashMap<String, State> = HashMap::new();
     let mut scans = 0;
     loop {
-        scan(&mut scans, &mut state, adapter).await?;
+        scan(&mut scans, &mut state, &adapter).await?;
     }
 }
 
-async fn scan(scans: &mut u16, state: &mut HashMap<String, State>, adapter: &Adapter) -> Result<(), Box<dyn Error>> {
+async fn get_adapter() -> Result<Box<Adapter>, Box<dyn Error>> {
+    let manager = Box::new(Manager::new().await?);
+    let mut adapter_list = manager.adapters().await?;
+    if adapter_list.is_empty() {
+        eprintln!("No Bluetooth adapters found");
+    }
+    Ok(Box::new(adapter_list.pop().unwrap()))
+}
+
+async fn scan(scans: &mut u16, state: &mut HashMap<String, State>, adapter: &Box<Adapter>) -> Result<(), Box<dyn Error>> {
     *scans += 1;        
     println!("Starting scan {} on {}...", scans, adapter.adapter_info().await?);
     adapter
