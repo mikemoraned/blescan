@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::time;
 
 use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter, PeripheralProperties};
-use btleplug::platform::Manager;
+use btleplug::platform::{Manager, Adapter};
 
 struct State {
     rssi: i16,
@@ -36,38 +36,46 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     let adapter = &adapter_list[0];
 
-    let mut state = HashMap::new();
+    let mut state: HashMap<String, State> = HashMap::new();
     let mut scans = 0;
     loop {
-        scans += 1;        
-        println!("Starting scan {} on {}...", scans, adapter.adapter_info().await?);
-        adapter
-            .start_scan(ScanFilter::default())
-            .await
-            .expect("Can't scan BLE adapter for connected devices...");
-        time::sleep(Duration::from_secs(1)).await;
-        let peripherals = adapter.peripherals().await?;
-        if peripherals.is_empty() {
-            eprintln!("->>> BLE peripheral devices were not found, sorry. Exiting...");
-        } else {
-            for peripheral in peripherals.iter() {
-                let properties = peripheral.properties().await?.unwrap();
-                if let Some(signature) = find_signature(&properties) {
-                    if let Some(rssi) = properties.rssi {
-                        state.entry(signature).and_modify(|s: &mut State| s.update(rssi, scans)).or_insert(State::new(rssi, scans));
-                    }
+        scan(&mut scans, &mut state, adapter).await?;
+    }
+}
+
+async fn scan(scans: &mut u16, state: &mut HashMap<String, State>, adapter: &Adapter) -> Result<(), Box<dyn Error>> {
+    *scans += 1;        
+    println!("Starting scan {} on {}...", scans, adapter.adapter_info().await?);
+    adapter
+        .start_scan(ScanFilter::default())
+        .await
+        .expect("Can't scan BLE adapter for connected devices...");
+    time::sleep(Duration::from_secs(1)).await;
+    let peripherals = adapter.peripherals().await?;
+    if peripherals.is_empty() {
+        eprintln!("->>> BLE peripheral devices were not found, sorry. Exiting...");
+    } else {
+        for peripheral in peripherals.iter() {
+            let properties = peripheral.properties().await?.unwrap();
+            if let Some(signature) = find_signature(&properties) {
+                if let Some(rssi) = properties.rssi {
+                    state.entry(signature)
+                        .and_modify(|s: &mut State| s.update(rssi, *scans))
+                        .or_insert(State::new(rssi, *scans));
                 }
             }
         }
-        adapter
-            .stop_scan().await
-            .expect("Can't stop scan");
-        println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
-        println!("[{}] State:", scans);
-        for (signature, state) in state.iter() {
-            println!("{:>32}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, scans - state.scan);
-        }
     }
+    adapter
+        .stop_scan().await
+        .expect("Can't stop scan");
+    println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
+    println!("[{}] State:", scans);
+    for (signature, state) in state.iter() {
+        println!("{:>32}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, *scans - state.scan);
+    }
+
+    Ok(())
 }
 
 fn find_signature(properties: &PeripheralProperties) -> Option<String> {
