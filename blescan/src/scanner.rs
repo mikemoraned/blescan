@@ -76,11 +76,18 @@ impl Scanner {
             .stop_scan().await
             .expect("Can't stop scan");
         println!("Stopped scan {} on {}", self.scans, self.adapter.adapter_info().await?);
-        println!("[{}] State:", self.scans);
-        for (signature, state) in self.state.iter() {
-            println!("{}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan);
-        }
+        
 
         Ok(())
+    }
+}
+
+impl std::fmt::Display for Scanner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}] State:", self.scans)?;
+        for (signature, state) in self.state.iter() {
+            write!(f, "{}: {:>4}, {:>4}, {:>5}, {:>5}\n", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan)?;
+        }
+        write!(f, "")
     }
 }
