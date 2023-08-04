@@ -26,7 +26,7 @@ impl State {
 pub struct Scanner {
     state : HashMap<String, State>,
     scans : u16,
-    adapter: Adapter
+    manager: Manager
 }
 
 impl Scanner {
@@ -34,24 +34,32 @@ impl Scanner {
         let state = HashMap::new();
         let scans = 0;
 
-        let manager = Manager::new().await?;
-        let adapter_list = manager.adapters().await?;
+        let manager: Manager = Manager::new().await?;
+        
+        Ok(Scanner { state, scans, manager })
+    }
+
+    // async fn get_adapter(&mut self) -> Result<&Adapter, Box<dyn Error>> {
+    //     let adapter_list = self.manager.adapters().await?;
+    //     if adapter_list.is_empty() {
+    //         eprintln!("No Bluetooth adapters found");
+    //     }
+    //     Ok(&adapter_list[0])
+    // }
+
+    pub async fn scan(&mut self) -> Result<(), Box<dyn Error>>{
+        self.scans += 1;  
+        let adapter_list = self.manager.adapters().await?;
         if adapter_list.is_empty() {
             eprintln!("No Bluetooth adapters found");
         }
         let adapter = &adapter_list[0];
-
-        Ok(Scanner { state, scans, adapter: adapter.clone() })
-    }
-
-    pub async fn scan(&mut self) -> Result<(), Box<dyn Error>>{
-        self.scans += 1;        
-        println!("Starting scan {} on {}...", self.scans, self.adapter.adapter_info().await?);
-        self.adapter
+        println!("Starting scan {} on {}...", self.scans, adapter.adapter_info().await?);
+        adapter
             .start_scan(ScanFilter::default())
             .await
             .expect("Can't scan BLE adapter for connected devices...");
-        let peripherals = self.adapter.peripherals().await?;
+        let peripherals = adapter.peripherals().await?;
         if peripherals.is_empty() {
             eprintln!("->>> BLE peripheral devices were not found, sorry. Exiting...");
         } else {
@@ -66,10 +74,10 @@ impl Scanner {
                 }
             }
         }
-        self.adapter
+        adapter
             .stop_scan().await
             .expect("Can't stop scan");
-        println!("Stopped scan {} on {}", self.scans, self.adapter.adapter_info().await?);
+        println!("Stopped scan {} on {}", self.scans, adapter.adapter_info().await?);
         println!("[{}] State:", self.scans);
         for (signature, state) in self.state.iter() {
             println!("{:>32}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan);
