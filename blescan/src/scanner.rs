@@ -3,8 +3,10 @@ use std::error::Error;
 use std::time::Duration;
 use tokio::time;
 
-use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter, PeripheralProperties};
+use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter};
 use btleplug::platform::{Manager, Adapter};
+
+use crate::signature::Signature;
 
 struct State {
     rssi: i16,
@@ -82,35 +84,3 @@ impl Scanner {
         Ok(())
     }
 }
-
-#[derive(Hash, Eq, PartialEq)]
-struct Signature(String);
-
-impl std::fmt::Display for Signature {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:>32}", self.0)
-    }
-}
-
-
-impl Signature {
-    fn find(properties: &PeripheralProperties) -> Option<Signature> {
-        if let Some(local_name) = &properties.local_name {
-            Some(Signature(local_name.clone()))
-        } else if !&properties.manufacturer_data.is_empty() {
-            let mut context = md5::Context::new();
-            let mut manufacturer_ids: Vec<&u16> = properties.manufacturer_data.keys().collect();
-            manufacturer_ids.sort();
-            for manufacturer_id in manufacturer_ids {
-                let arbitrary_data = properties.manufacturer_data[manufacturer_id].clone();
-                context.consume(arbitrary_data);
-            }
-            let digest = context.compute();
-            Some(Signature(format!("{:x}", digest)))
-        }
-        else {
-            None
-        }
-    }
-}
-
