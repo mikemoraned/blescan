@@ -27,14 +27,14 @@ impl State {
 
 pub struct Scanner {
     scans: u16,
-    state: HashMap<String, State>,
+    state: HashMap<Signature, State>,
     adapter: Adapter
 }
 
 impl Scanner {
     pub async fn new() -> Result<Scanner, Box<dyn Error>> {
         let scans = 0;
-        let state: HashMap<String, State> = HashMap::new();
+        let state: HashMap<Signature, State> = HashMap::new();
         
         let manager = Manager::new().await?;
         let mut adapter_list = manager.adapters().await?;
@@ -61,7 +61,7 @@ impl Scanner {
         } else {
             for peripheral in peripherals.iter() {
                 let properties = peripheral.properties().await?.unwrap();
-                if let Some(signature) = find_signature(&properties) {
+                if let Some(signature) = Signature::find(&properties) {
                     if let Some(rssi) = properties.rssi {
                         self.state.entry(signature)
                             .and_modify(|s: &mut State| s.update(rssi, self.scans))
@@ -76,29 +76,41 @@ impl Scanner {
         println!("Stopped scan {} on {}", self.scans, self.adapter.adapter_info().await?);
         println!("[{}] State:", self.scans);
         for (signature, state) in self.state.iter() {
-            println!("{:>32}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan);
+            println!("{}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan);
         }
 
         Ok(())
     }
 }
 
-fn find_signature(properties: &PeripheralProperties) -> Option<String> {
-    if let Some(local_name) = &properties.local_name {
-        Some(local_name.clone())
-    } else if !&properties.manufacturer_data.is_empty() {
-        let mut context = md5::Context::new();
-        let mut manufacturer_ids: Vec<&u16> = properties.manufacturer_data.keys().collect();
-        manufacturer_ids.sort();
-        for manufacturer_id in manufacturer_ids {
-            let arbitrary_data = properties.manufacturer_data[manufacturer_id].clone();
-            context.consume(arbitrary_data);
-        }
-        let digest = context.compute();
-        Some(format!("{:x}", digest))
+#[derive(Hash, Eq, PartialEq)]
+struct Signature(String);
+
+impl std::fmt::Display for Signature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:>32}", self.0)
     }
-    else {
-        None
+}
+
+
+impl Signature {
+    fn find(properties: &PeripheralProperties) -> Option<Signature> {
+        if let Some(local_name) = &properties.local_name {
+            Some(Signature(local_name.clone()))
+        } else if !&properties.manufacturer_data.is_empty() {
+            let mut context = md5::Context::new();
+            let mut manufacturer_ids: Vec<&u16> = properties.manufacturer_data.keys().collect();
+            manufacturer_ids.sort();
+            for manufacturer_id in manufacturer_ids {
+                let arbitrary_data = properties.manufacturer_data[manufacturer_id].clone();
+                context.consume(arbitrary_data);
+            }
+            let digest = context.compute();
+            Some(Signature(format!("{:x}", digest)))
+        }
+        else {
+            None
+        }
     }
 }
 
