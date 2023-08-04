@@ -8,17 +8,20 @@ use btleplug::platform::Manager;
 
 struct State {
     rssi: i16,
-    scan: u16
+    scan: u16,
+    velocity: i16
 }
 
 impl State {
     fn new(rssi: i16, scan: u16) -> State {
-        State { rssi, scan }
+        State { rssi, scan, velocity: 0 }
     }
 
     fn update(&mut self, rssi: i16, scan: u16) {
+        let velocity = rssi - self.rssi;
         self.rssi = rssi;
         self.scan = scan;
+        self.velocity = velocity;
     }
 }
 
@@ -62,7 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("Stopped scan {} on {}", scans, adapter.adapter_info().await?);
         println!("[{}] State:", scans);
         for (signature, state) in state.iter() {
-            println!("{:>32}: {:>4}, {:>5}, {:>5}", signature, state.rssi, state.scan, scans - state.scan);
+            println!("{:>32}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, scans - state.scan);
         }
     }
 }
