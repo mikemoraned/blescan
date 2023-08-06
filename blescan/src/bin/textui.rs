@@ -10,15 +10,13 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{prelude::*, widgets::*};
+use ratatui::{
+    backend::Backend,
+    layout::{Constraint, Direction, Layout},
+    widgets::{Block, Borders},
+    Frame,
+};
 
-/// This is a bare minimum example. There are many approaches to running an application loop, so
-/// this is not meant to be prescriptive. It is only meant to demonstrate the basic setup and
-/// teardown of a terminal application.
-///
-/// A more robust application would probably want to handle errors and ensure that the terminal is
-/// restored to a sane state before exiting. This example does not do that. It also does not handle
-/// events or update the application state. It just draws a greeting and exits when the user
-/// presses 'q'.
 fn main() -> Result<()> {
     let mut terminal = setup_terminal().context("setup failed")?;
     run(&mut terminal).context("app loop failed")?;
@@ -26,9 +24,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Setup the terminal. This is where you would enable raw mode, enter the alternate screen, and
-/// hide the cursor. This example does not handle errors. A more robust application would probably
-/// want to handle errors and ensure that the terminal is restored to a sane state before exiting.
 fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     let mut stdout = io::stdout();
     enable_raw_mode().context("failed to enable raw mode")?;
@@ -36,8 +31,6 @@ fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     Terminal::new(CrosstermBackend::new(stdout)).context("creating terminal failed")
 }
 
-/// Restore the terminal. This is where you disable raw mode, leave the alternate screen, and show
-/// the cursor.
 fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
     disable_raw_mode().context("failed to disable raw mode")?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)
@@ -45,10 +38,6 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
     terminal.show_cursor().context("unable to show cursor")
 }
 
-/// Run the application loop. This is where you would handle events and update the application
-/// state. This example exits when the user presses 'q'. Other styles of application loops are
-/// possible, for example, you could have multiple application states and switch between them based
-/// on events, or you could have a single application state and update it based on events.
 fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
     loop {
         terminal.draw(crate::render_app)?;
@@ -61,15 +50,29 @@ fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
 
 /// Render the application. This is where you would draw the application UI. This example just
 /// draws a greeting.
-fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>) {
-    let greeting = Paragraph::new("Hello World! (press 'q' to quit)");
-    frame.render_widget(greeting, frame.size());
+fn render_app(f: &mut ratatui::Frame<CrosstermBackend<Stdout>>) {
+    // let greeting = Paragraph::new("Hello World! (press 'q' to quit)");
+    // frame.render_widget(greeting, frame.size());
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(50),
+                Constraint::Percentage(50)
+            ].as_ref()
+        )
+        .split(f.size());
+    let block = Block::default()
+         .title("Named")
+         .borders(Borders::ALL);
+    f.render_widget(block, chunks[0]);
+    let block = Block::default()
+         .title("Anonymous")
+         .borders(Borders::ALL);
+    f.render_widget(block, chunks[1]);
 }
 
-/// Check if the user has pressed 'q'. This is where you would handle events. This example just
-/// checks if the user has pressed 'q' and returns true if they have. It does not handle any other
-/// events. There is a 250ms timeout on the event poll so that the application can exit in a timely
-/// manner, and to ensure that the terminal is rendered at least once every 250ms.
 fn should_quit() -> Result<bool> {
     if event::poll(Duration::from_millis(250)).context("event poll failed")? {
         if let Event::Key(key) = event::read().context("event read failed")? {
