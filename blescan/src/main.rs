@@ -8,5 +8,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut scanner = Scanner::new().await?;
     loop {
         scanner.scan().await?;
+        println!("{}", scanner);
     }
 }

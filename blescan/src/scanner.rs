@@ -3,8 +3,10 @@ use std::error::Error;
 use std::time::Duration;
 use tokio::time;
 
-use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter, PeripheralProperties};
+use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter};
 use btleplug::platform::{Manager, Adapter};
+
+use crate::signature::Signature;
 
 struct State {
     rssi: i16,
@@ -74,43 +76,32 @@ impl Scanner {
             .stop_scan().await
             .expect("Can't stop scan");
         println!("Stopped scan {} on {}", self.scans, self.adapter.adapter_info().await?);
-        println!("[{}] State:", self.scans);
-        for (signature, state) in self.state.iter() {
-            println!("{}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan);
-        }
+        
 
         Ok(())
     }
 }
 
-#[derive(Hash, Eq, PartialEq)]
-struct Signature(String);
-
-impl std::fmt::Display for Signature {
+impl std::fmt::Display for Scanner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:>32}", self.0)
-    }
-}
-
-
-impl Signature {
-    fn find(properties: &PeripheralProperties) -> Option<Signature> {
-        if let Some(local_name) = &properties.local_name {
-            Some(Signature(local_name.clone()))
-        } else if !&properties.manufacturer_data.is_empty() {
-            let mut context = md5::Context::new();
-            let mut manufacturer_ids: Vec<&u16> = properties.manufacturer_data.keys().collect();
-            manufacturer_ids.sort();
-            for manufacturer_id in manufacturer_ids {
-                let arbitrary_data = properties.manufacturer_data[manufacturer_id].clone();
-                context.consume(arbitrary_data);
+        write!(f, "[{}] Named:", self.scans)?;
+        for (signature, state) in self.state.iter() {
+            if let Signature::Named(_) = signature {
+                self.fmt_row(signature, state, f)?;
             }
-            let digest = context.compute();
-            Some(Signature(format!("{:x}", digest)))
         }
-        else {
-            None
+        write!(f, "[{}] Anonymous:", self.scans)?;
+        for (signature, state) in self.state.iter() {
+            if let Signature::Anonymous(_) = signature {
+                self.fmt_row(signature, state, f)?;
+            }
         }
+        write!(f, "")
     }
 }
 
+impl Scanner {
+    fn fmt_row(&self, signature: &Signature, state: &State, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {:>4}, {:>4}, {:>5}, {:>5}\n", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan)
+    }
+}
