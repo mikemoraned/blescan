@@ -51,7 +51,7 @@ impl Scanner {
 
     pub async fn scan(&mut self) -> Result<(), Box<dyn Error>> {
         self.scans += 1;        
-        println!("Starting scan {} on {}...", self.scans, self.adapter.adapter_info().await?);
+        // println!("Starting scan {} on {}...", self.scans, self.adapter.adapter_info().await?);
         self.adapter
             .start_scan(ScanFilter::default())
             .await
@@ -75,7 +75,7 @@ impl Scanner {
         self.adapter
             .stop_scan().await
             .expect("Can't stop scan");
-        println!("Stopped scan {} on {}", self.scans, self.adapter.adapter_info().await?);
+        // println!("Stopped scan {} on {}", self.scans, self.adapter.adapter_info().await?);
         
 
         Ok(())
