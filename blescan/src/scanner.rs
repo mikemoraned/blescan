@@ -84,10 +84,24 @@ impl Scanner {
 
 impl std::fmt::Display for Scanner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}] State:", self.scans)?;
+        write!(f, "[{}] Named:", self.scans)?;
         for (signature, state) in self.state.iter() {
-            write!(f, "{}: {:>4}, {:>4}, {:>5}, {:>5}\n", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan)?;
+            if let Signature::Named(_) = signature {
+                self.fmt_row(signature, state, f)?;
+            }
+        }
+        write!(f, "[{}] Anonymous:", self.scans)?;
+        for (signature, state) in self.state.iter() {
+            if let Signature::Anonymous(_) = signature {
+                self.fmt_row(signature, state, f)?;
+            }
         }
         write!(f, "")
+    }
+}
+
+impl Scanner {
+    fn fmt_row(&self, signature: &Signature, state: &State, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {:>4}, {:>4}, {:>5}, {:>5}\n", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan)
     }
 }
