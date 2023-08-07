@@ -16,7 +16,7 @@ use ratatui::{
     widgets::{Block, Borders},
     Frame,
 };
-use blescan::scanner::Scanner;
+use blescan::{scanner::Scanner, signature::Signature};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -44,7 +44,15 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     let mut scanner = Scanner::new().await?;
     loop {
         terminal.draw(|f| {
-            let items = [ListItem::new("Item 1"), ListItem::new("Item 2"), ListItem::new("Item 3")];
+            let items : Vec<ListItem> 
+                = scanner.state.iter().flat_map(|(k,_)| {
+                    if let Signature::Named(n) = k {
+                        vec![ListItem::new(format!("{}", n))]
+                    }
+                    else {
+                        vec![]
+                    }
+                }).collect();
             let list = List::new(items)
                 .block(Block::default().title("List").borders(Borders::ALL))
                 .style(Style::default().fg(Color::White))

@@ -8,7 +8,7 @@ use btleplug::platform::{Manager, Adapter};
 
 use crate::signature::Signature;
 
-struct State {
+pub struct State {
     rssi: i16,
     scan: u16,
     velocity: i16
@@ -28,8 +28,8 @@ impl State {
 }
 
 pub struct Scanner {
+    pub state: HashMap<Signature, State>,
     scans: u16,
-    state: HashMap<Signature, State>,
     adapter: Adapter
 }
 
