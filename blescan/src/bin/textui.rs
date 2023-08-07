@@ -44,7 +44,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     let mut scanner = Scanner::new().await?;
     loop {
         terminal.draw(|f| {
-            let items : Vec<ListItem> 
+            let named_items : Vec<ListItem> 
                 = scanner.state.iter().flat_map(|(k,_)| {
                     if let Signature::Named(n) = k {
                         vec![ListItem::new(format!("{}", n))]
@@ -53,13 +53,37 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                         vec![]
                     }
                 }).collect();
-            let list = List::new(items)
-                .block(Block::default().title("List").borders(Borders::ALL))
+            let named_list = List::new(named_items)
+                .block(Block::default().title("Named").borders(Borders::ALL))
                 .style(Style::default().fg(Color::White))
                 .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
                 .highlight_symbol(">>");
-            let size = f.size();
-            f.render_widget(list, size);
+            let anon_items : Vec<ListItem> 
+                = scanner.state.iter().flat_map(|(k,_)| {
+                    if let Signature::Anonymous(d) = k {
+                        vec![ListItem::new(format!("{:x}", d))]
+                    }
+                    else {
+                        vec![]
+                    }
+                }).collect();
+            let anon_list = List::new(anon_items)
+                .block(Block::default().title("Anonymous").borders(Borders::ALL))
+                .style(Style::default().fg(Color::White))
+                .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+                .highlight_symbol(">>");
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(50),
+                        Constraint::Percentage(50)
+                    ].as_ref()
+                )
+                .split(f.size());
+            f.render_widget(named_list, chunks[0]);
+            f.render_widget(anon_list, chunks[1]);
         })?;
         if should_quit()? {
             break;
