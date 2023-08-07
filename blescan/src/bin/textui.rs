@@ -11,10 +11,8 @@ use crossterm::{
 };
 use ratatui::{prelude::*, widgets::*};
 use ratatui::{
-    backend::Backend,
     layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders},
-    Frame,
+    widgets::{Block, Borders}
 };
 use blescan::{scanner::Scanner, signature::Signature};
 
