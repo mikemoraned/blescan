@@ -8,10 +8,10 @@ use btleplug::platform::{Manager, Adapter};
 
 use crate::signature::Signature;
 
-struct State {
-    rssi: i16,
-    scan: u16,
-    velocity: i16
+pub struct State {
+    pub rssi: i16,
+    pub scan: u16,
+    pub velocity: i16
 }
 
 impl State {
@@ -28,8 +28,8 @@ impl State {
 }
 
 pub struct Scanner {
+    pub state: HashMap<Signature, State>,
     scans: u16,
-    state: HashMap<Signature, State>,
     adapter: Adapter
 }
 
@@ -51,7 +51,6 @@ impl Scanner {
 
     pub async fn scan(&mut self) -> Result<(), Box<dyn Error>> {
         self.scans += 1;        
-        println!("Starting scan {} on {}...", self.scans, self.adapter.adapter_info().await?);
         self.adapter
             .start_scan(ScanFilter::default())
             .await
@@ -75,22 +74,19 @@ impl Scanner {
         self.adapter
             .stop_scan().await
             .expect("Can't stop scan");
-        println!("Stopped scan {} on {}", self.scans, self.adapter.adapter_info().await?);
-        
-
         Ok(())
     }
 }
 
 impl std::fmt::Display for Scanner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}] Named:", self.scans)?;
+        writeln!(f, "[{}] Named:", self.scans)?;
         for (signature, state) in self.state.iter() {
             if let Signature::Named(_) = signature {
                 self.fmt_row(signature, state, f)?;
             }
         }
-        write!(f, "[{}] Anonymous:", self.scans)?;
+        writeln!(f, "[{}] Anonymous:", self.scans)?;
         for (signature, state) in self.state.iter() {
             if let Signature::Anonymous(_) = signature {
                 self.fmt_row(signature, state, f)?;
@@ -102,6 +98,6 @@ impl std::fmt::Display for Scanner {
 
 impl Scanner {
     fn fmt_row(&self, signature: &Signature, state: &State, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {:>4}, {:>4}, {:>5}, {:>5}\n", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan)
+        writeln!(f, "{}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan)
     }
 }
