@@ -102,6 +102,6 @@ impl std::fmt::Display for Scanner {
 
 impl Scanner {
     fn fmt_row(&self, signature: &Signature, state: &State, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {:>4}, {:>4}, {:>5}, {:>5}\n", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan)
+        writeln!(f, "{}: {:>4}, {:>4}, {:>5}, {:>5}", signature, state.rssi, state.velocity, state.scan, self.scans - state.scan)
     }
 }
