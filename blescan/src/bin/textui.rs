@@ -43,9 +43,10 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     loop {
         terminal.draw(|f| {
             let named_items : Vec<ListItem> 
-                = scanner.state.iter().flat_map(|(k,_)| {
-                    if let Signature::Named(n) = k {
-                        vec![ListItem::new(format!("{}", n))]
+                = scanner.state.iter().flat_map(|(signature,state)| {
+                    if let Signature::Named(n) = signature {
+                        vec![ListItem::new(format!(
+                            "{:<32}: {:>4}, {:>4}\n", n, state.rssi, state.velocity))]
                     }
                     else {
                         vec![]
@@ -57,9 +58,10 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                 .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
                 .highlight_symbol(">>");
             let anon_items : Vec<ListItem> 
-                = scanner.state.iter().flat_map(|(k,_)| {
-                    if let Signature::Anonymous(d) = k {
-                        vec![ListItem::new(format!("{:x}", d))]
+                = scanner.state.iter().flat_map(|(signature, state)| {
+                    if let Signature::Anonymous(d) = signature {
+                        vec![ListItem::new(format!(
+                            "{:x}: {:>4}, {:>4}\n", d, state.rssi, state.velocity))]
                     }
                     else {
                         vec![]

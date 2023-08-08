@@ -9,9 +9,9 @@ use btleplug::platform::{Manager, Adapter};
 use crate::signature::Signature;
 
 pub struct State {
-    rssi: i16,
-    scan: u16,
-    velocity: i16
+    pub rssi: i16,
+    pub scan: u16,
+    pub velocity: i16
 }
 
 impl State {
