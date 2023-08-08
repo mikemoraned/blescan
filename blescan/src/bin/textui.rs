@@ -54,7 +54,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                 }).collect();
             let named_list = List::new(named_items)
                 .block(Block::default().title("Named").borders(Borders::ALL))
-                .style(Style::default().fg(Color::White));
+                .style(Style::default().fg(Color::Black));
             let anon_items : Vec<ListItem> 
                 = scanner.state.iter().flat_map(|(signature, state)| {
                     if let Signature::Anonymous(d) = signature {
@@ -67,7 +67,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                 }).collect();
             let anon_list = List::new(anon_items)
                 .block(Block::default().title("Anonymous").borders(Borders::ALL))
-                .style(Style::default().fg(Color::White));
+                .style(Style::default().fg(Color::Black));
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .margin(1)
