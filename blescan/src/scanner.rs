@@ -51,7 +51,6 @@ impl Scanner {
 
     pub async fn scan(&mut self) -> Result<(), Box<dyn Error>> {
         self.scans += 1;        
-        // println!("Starting scan {} on {}...", self.scans, self.adapter.adapter_info().await?);
         self.adapter
             .start_scan(ScanFilter::default())
             .await
@@ -75,22 +74,19 @@ impl Scanner {
         self.adapter
             .stop_scan().await
             .expect("Can't stop scan");
-        // println!("Stopped scan {} on {}", self.scans, self.adapter.adapter_info().await?);
-        
-
         Ok(())
     }
 }
 
 impl std::fmt::Display for Scanner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}] Named:", self.scans)?;
+        writeln!(f, "[{}] Named:", self.scans)?;
         for (signature, state) in self.state.iter() {
             if let Signature::Named(_) = signature {
                 self.fmt_row(signature, state, f)?;
             }
         }
-        write!(f, "[{}] Anonymous:", self.scans)?;
+        writeln!(f, "[{}] Anonymous:", self.scans)?;
         for (signature, state) in self.state.iter() {
             if let Signature::Anonymous(_) = signature {
                 self.fmt_row(signature, state, f)?;
