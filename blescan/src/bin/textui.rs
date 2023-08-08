@@ -45,33 +45,29 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
             let named_items : Vec<ListItem> 
                 = scanner.state.iter().flat_map(|(signature,state)| {
                     if let Signature::Named(n) = signature {
-                        vec![ListItem::new(format!(
-                            "{:<32}: {:>4}, {:>4}\n", n, state.rssi, state.velocity))]
+                        Some(ListItem::new(format!(
+                            "{:<32}: {:>4}, {:>4}\n", n, state.rssi, state.velocity)))
                     }
                     else {
-                        vec![]
+                        None
                     }
                 }).collect();
             let named_list = List::new(named_items)
                 .block(Block::default().title("Named").borders(Borders::ALL))
-                .style(Style::default().fg(Color::White))
-                .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-                .highlight_symbol(">>");
+                .style(Style::default().fg(Color::White));
             let anon_items : Vec<ListItem> 
                 = scanner.state.iter().flat_map(|(signature, state)| {
                     if let Signature::Anonymous(d) = signature {
-                        vec![ListItem::new(format!(
-                            "{:x}: {:>4}, {:>4}\n", d, state.rssi, state.velocity))]
+                        Some(ListItem::new(format!(
+                            "{:x}: {:>4}, {:>4}\n", d, state.rssi, state.velocity)))
                     }
                     else {
-                        vec![]
+                        None
                     }
                 }).collect();
             let anon_list = List::new(anon_items)
                 .block(Block::default().title("Anonymous").borders(Borders::ALL))
-                .style(Style::default().fg(Color::White))
-                .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-                .highlight_symbol(">>");
+                .style(Style::default().fg(Color::White));
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .margin(1)
