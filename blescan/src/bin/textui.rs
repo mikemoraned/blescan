@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, device_state::DeviceState, signature::Signature};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature};
 use chrono::{Utc, DurationRound};
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -47,11 +47,9 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     let start = Utc::now().duration_round(chrono::Duration::seconds(1)).unwrap();
     loop {
         terminal.draw(|f| {
-            let mut ordered_by_age : Vec<DeviceState> = state.snapshot().0.clone();
-            ordered_by_age.sort_by(
-                |a, b| b.date_time.partial_cmp(&a.date_time).unwrap());
+            let ordered_by_age = state.snapshot().order_by_age_oldest_last();
             let named_items : Vec<ListItem> 
-                = ordered_by_age.iter().flat_map(|state| {
+                = ordered_by_age.0.iter().flat_map(|state| {
                     let age = (state.date_time.duration_round(chrono::Duration::seconds(1)).unwrap() 
                             - start).to_std().unwrap();
                     if let Signature::Named(n) = &state.signature {
@@ -66,7 +64,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                 .block(Block::default().title("Named").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
             let anon_items : Vec<ListItem> 
-                = ordered_by_age.iter().flat_map(|state| {
+                = ordered_by_age.0.iter().flat_map(|state| {
                     if let Signature::Anonymous(d) = &state.signature {
                         let age = (state.date_time.duration_round(chrono::Duration::seconds(1)).unwrap() 
                             - start).to_std().unwrap();
