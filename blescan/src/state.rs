@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{signature::Signature, discover::DiscoveryEvent};
+use crate::{signature::Signature, discover::DiscoveryEvent, snapshot::Snapshot};
 
 pub struct State {
     state: HashMap<Signature, DeviceState>
@@ -13,34 +13,6 @@ impl Default for State {
         }
     }
 }
-
-#[derive(PartialEq, Debug)]
-pub struct Snapshot(Vec<DeviceState>);
-
-impl std::fmt::Display for Snapshot {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Named:")?;
-        for state in self.0.iter() {
-            if let Signature::Named(_) = state.signature {
-                self.fmt_row(state, f)?;
-            }
-        }
-        writeln!(f, "Anonymous:")?;
-        for state in self.0.iter() {
-            if let Signature::Anonymous(_) = state.signature {
-                self.fmt_row(state, f)?;
-            }
-        }
-        write!(f, "")
-    }
-}
-
-impl Snapshot {
-    fn fmt_row(&self, state: &DeviceState, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{:>4}, {:>4}", state.signature, state.rssi)
-    }
-}
-
 
 impl State {
     pub fn snapshot(&self) -> Snapshot {
