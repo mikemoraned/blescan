@@ -1,3 +1,4 @@
+pub mod snapshot;
 pub mod discover_btleplug;
 mod discover;
 pub mod state;
