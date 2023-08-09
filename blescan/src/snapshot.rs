@@ -1,4 +1,4 @@
-use crate::{state::DeviceState, signature::Signature};
+use crate::{ signature::Signature, device_state::DeviceState};
 
 #[derive(PartialEq, Debug)]
 pub struct Snapshot(pub Vec<DeviceState>);
