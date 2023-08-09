@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::time::Duration;
+use chrono::Utc;
 use tokio::time;
 
 use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter};
@@ -37,11 +38,12 @@ impl Scanner {
         time::sleep(Duration::from_secs(1)).await;
         let peripherals = self.adapter.peripherals().await?;
         let mut events = vec![];
+        let current_time = Utc::now();
         for peripheral in peripherals.iter() {
             let properties = peripheral.properties().await?.unwrap();
             if let Some(signature) = Signature::find(&properties) {
                 if let Some(rssi) = properties.rssi {
-                    events.push(DiscoveryEvent::new(signature, rssi));
+                    events.push(DiscoveryEvent::new(current_time, signature, rssi));
                 }
             }
         }

@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use blescan::{discover_btleplug::Scanner, state::State, device_state::DeviceState, signature::Signature};
+use chrono::{Utc, DurationRound};
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -39,20 +40,23 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
 }
 
 async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
-    // let mut scanner = Scanner::new().await?;
+    use humantime::format_duration;
+
     let mut scanner = Scanner::new().await?;
     let mut state = State::default();
-    
+    let start = Utc::now().duration_round(chrono::Duration::seconds(1)).unwrap();
     loop {
         terminal.draw(|f| {
             let mut ordered_by_age : Vec<DeviceState> = state.snapshot().0.clone();
-            // ordered_by_age.sort_by(
-            //     |a, b| b.scan.partial_cmp(&a.scan).unwrap());
+            ordered_by_age.sort_by(
+                |a, b| b.date_time.partial_cmp(&a.date_time).unwrap());
             let named_items : Vec<ListItem> 
                 = ordered_by_age.iter().flat_map(|state| {
+                    let age = (state.date_time.duration_round(chrono::Duration::seconds(1)).unwrap() 
+                            - start).to_std().unwrap();
                     if let Signature::Named(n) = &state.signature {
                         Some(ListItem::new(format!(
-                            "{:<32}:{:>4}\n", n, state.rssi)))
+                            "{:<32}[{}]:{:>4}\n", n, format_duration(age), state.rssi)))
                     }
                     else {
                         None
@@ -64,8 +68,10 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
             let anon_items : Vec<ListItem> 
                 = ordered_by_age.iter().flat_map(|state| {
                     if let Signature::Anonymous(d) = &state.signature {
+                        let age = (state.date_time.duration_round(chrono::Duration::seconds(1)).unwrap() 
+                            - start).to_std().unwrap();
                         Some(ListItem::new(format!(
-                            "{:x}:{:>4}\n", d, state.rssi)))
+                            "{:x}[{}]:{:>4}\n", d, format_duration(age), state.rssi)))
                     }
                     else {
                         None
