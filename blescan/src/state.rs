@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::signature::Signature;
+use crate::{signature::Signature, discover::DiscoveryEvent};
 
 pub struct State {
     state: HashMap<Signature, DeviceState>
@@ -53,16 +53,6 @@ impl DeviceState {
     }
 }
 
-pub struct DiscoveryEvent {
-    pub signature: Signature,
-    pub rssi: i16,
-}
-
-impl DiscoveryEvent {
-    pub fn new(signature: Signature, rssi: i16) -> DiscoveryEvent {
-        DiscoveryEvent { signature, rssi }
-    }
-}
 
 #[cfg(test)]
 mod test {
