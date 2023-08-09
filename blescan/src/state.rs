@@ -14,11 +14,39 @@ impl Default for State {
     }
 }
 
+#[derive(PartialEq, Debug)]
+pub struct Snapshot(Vec<DeviceState>);
+
+impl std::fmt::Display for Snapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Named:")?;
+        for state in self.0.iter() {
+            if let Signature::Named(_) = state.signature {
+                self.fmt_row(state, f)?;
+            }
+        }
+        writeln!(f, "Anonymous:")?;
+        for state in self.0.iter() {
+            if let Signature::Anonymous(_) = state.signature {
+                self.fmt_row(state, f)?;
+            }
+        }
+        write!(f, "")
+    }
+}
+
+impl Snapshot {
+    fn fmt_row(&self, state: &DeviceState, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{:>4}, {:>4}", state.signature, state.rssi)
+    }
+}
+
+
 impl State {
-    pub fn snapshot(&self) -> Vec<DeviceState> {
+    pub fn snapshot(&self) -> Snapshot {
         let mut s : Vec<(Signature, DeviceState)> = self.state.clone().into_iter().collect();
         s.sort_by(|(a,_),(b,_)| a.partial_cmp(b).unwrap());
-        s.into_iter().map(|(_,v)| v.clone()).collect()
+        Snapshot(s.into_iter().map(|(_,v)| v.clone()).collect())
     }
 
     pub fn discover(&mut self, events: Vec<DiscoveryEvent>) {
@@ -56,14 +84,14 @@ impl DeviceState {
 
 #[cfg(test)]
 mod test {
-    use crate::{signature::Signature, state::DeviceState};
+    use crate::{signature::Signature, state::{DeviceState, Snapshot}};
 
     use super::{State, DiscoveryEvent};
 
     #[test]
     fn starting_state() {
         let state = State::default();
-        assert_eq!(state.snapshot(), vec![]);
+        assert_eq!(state.snapshot(), Snapshot(vec![]));
     }
 
     #[test]
@@ -73,7 +101,7 @@ mod test {
             vec![DiscoveryEvent::new(Signature::Named("Device 1".to_string()), -10)]
         );
         assert_eq!(state.snapshot(), 
-            vec![DeviceState::new(Signature::Named("Device 1".to_string()), -10)]
+            Snapshot(vec![DeviceState::new(Signature::Named("Device 1".to_string()), -10)])
         );
     }
 
@@ -87,6 +115,6 @@ mod test {
             vec![DiscoveryEvent::new(Signature::Named("Device 1".to_string()), -20)]
         );
         assert_eq!(state.snapshot(), 
-            vec![DeviceState::new(Signature::Named("Device 1".to_string()), -20)]);
+            Snapshot(vec![DeviceState::new(Signature::Named("Device 1".to_string()), -20)]));
     }
 }
