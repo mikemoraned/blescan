@@ -1,10 +1,28 @@
 use btleplug::api::PeripheralProperties;
 
 
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone)]
 pub enum Signature {
     Named(String),
     Anonymous(md5::Digest)
+}
+
+impl PartialOrd for Signature {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+         let self_s = self.normalised_string();
+         let other_s = other.normalised_string();
+         self_s.partial_cmp(&other_s)
+    }
+}
+
+impl Signature {
+    fn normalised_string(&self) -> String {
+        use Signature::*;
+        match self {
+            Named(n) => format!("Named:{}", n),
+            Anonymous(d) => format!("Anonymous:{:x}", d)
+        }
+    }
 }
 
 impl std::fmt::Display for Signature {
