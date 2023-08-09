@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use blescan::{discover_btleplug::Scanner, state::State, device_state::DeviceState, signature::Signature};
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -14,7 +15,6 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders}
 };
-use blescan::{scanner::Scanner, signature::Signature};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -39,17 +39,20 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
 }
 
 async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
+    // let mut scanner = Scanner::new().await?;
     let mut scanner = Scanner::new().await?;
+    let mut state = State::default();
+    
     loop {
         terminal.draw(|f| {
-            let mut ordered_by_age : Vec<_> = scanner.state.iter().collect();
-            ordered_by_age.sort_by(
-                |(_, a),(_, b)| b.scan.partial_cmp(&a.scan).unwrap());
+            let mut ordered_by_age : Vec<DeviceState> = state.snapshot().0.clone();
+            // ordered_by_age.sort_by(
+            //     |a, b| b.scan.partial_cmp(&a.scan).unwrap());
             let named_items : Vec<ListItem> 
-                = ordered_by_age.iter().flat_map(|(signature,state)| {
-                    if let Signature::Named(n) = signature {
+                = ordered_by_age.iter().flat_map(|state| {
+                    if let Signature::Named(n) = &state.signature {
                         Some(ListItem::new(format!(
-                            "{:<32}[{:>5}]:{:>4},{:>3}\n", n, state.scan, state.rssi, state.velocity)))
+                            "{:<32}:{:>4}\n", n, state.rssi)))
                     }
                     else {
                         None
@@ -59,10 +62,10 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                 .block(Block::default().title("Named").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
             let anon_items : Vec<ListItem> 
-                = ordered_by_age.iter().flat_map(|(signature, state)| {
-                    if let Signature::Anonymous(d) = signature {
+                = ordered_by_age.iter().flat_map(|state| {
+                    if let Signature::Anonymous(d) = &state.signature {
                         Some(ListItem::new(format!(
-                            "{:x}[{:>5}]:{:>4},{:>3}\n", d, state.scan, state.rssi, state.velocity)))
+                            "{:x}:{:>4}\n", d, state.rssi)))
                     }
                     else {
                         None
@@ -87,7 +90,8 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
         if should_quit()? {
             break;
         }
-        scanner.scan().await?;
+        let events = scanner.scan().await?;
+        state.discover(events);
     }
     Ok(())
 }
