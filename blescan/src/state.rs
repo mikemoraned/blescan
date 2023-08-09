@@ -2,16 +2,9 @@ use std::collections::HashMap;
 
 use crate::{signature::Signature, discover::DiscoveryEvent, snapshot::Snapshot, device_state::DeviceState};
 
+#[derive(Default)]
 pub struct State {
     state: HashMap<Signature, DeviceState>
-}
-
-impl Default for State {
-    fn default() -> State {
-        State { 
-            state: HashMap::default()
-        }
-    }
 }
 
 impl State {
