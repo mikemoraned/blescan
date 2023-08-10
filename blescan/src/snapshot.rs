@@ -29,12 +29,12 @@ impl Snapshot {
         Snapshot(ordered_by_age)
     }
 
-    #[must_use] pub fn compared_to(&self, baseline: chrono::DateTime<chrono::Utc>) 
+    #[must_use] pub fn compared_to(&self, now: chrono::DateTime<chrono::Utc>) 
         -> Vec<(DeviceState, Comparison)> {
         self.0.iter().map(|d| {
             (
                 d.clone(), 
-                Comparison { relative_age: d.date_time - baseline }
+                Comparison { relative_age: now - d.date_time }
             )
         }).collect()
     }
@@ -79,15 +79,15 @@ mod test {
                 DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named("2".to_string()), -1),
                 DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -1),
             ]);
-        let baseline = Utc.timestamp_opt(0, 0).unwrap();
+        let now = Utc.timestamp_opt(10, 0).unwrap();
         let expected_comparisons 
             = vec![
-                (snapshot.0[0].clone(), Comparison { relative_age: Duration::seconds(1) }),
-                (snapshot.0[1].clone(), Comparison { relative_age: Duration::seconds(2) }),
-                (snapshot.0[2].clone(), Comparison { relative_age: Duration::seconds(3) }),
+                (snapshot.0[0].clone(), Comparison { relative_age: Duration::seconds(9) }),
+                (snapshot.0[1].clone(), Comparison { relative_age: Duration::seconds(8) }),
+                (snapshot.0[2].clone(), Comparison { relative_age: Duration::seconds(7) }),
             ];
         let actual_comparisons 
-            = snapshot.compared_to(baseline);
+            = snapshot.compared_to(now);
         assert_eq!(actual_comparisons, expected_comparisons);
     }
 }

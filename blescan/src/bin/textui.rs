@@ -45,11 +45,11 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
 
     let mut scanner = Scanner::new().await?;
     let mut state = State::default();
-    let start = Utc::now().duration_round(chrono::Duration::seconds(1)).unwrap();
     loop {
         terminal.draw(|f| {
+            let now = Utc::now();
             let ordered_by_age = state.snapshot().order_by_age_oldest_last();
-            let with_age = ordered_by_age.compared_to(start);
+            let with_age = ordered_by_age.compared_to(now);
             let (named_items, anon_items)   
                 = with_age.iter().fold((Vec::new(), Vec::new()), 
                     |
