@@ -10,11 +10,11 @@ pub struct DeviceState {
 }
 
 impl DeviceState {
-    pub fn new(date_time: DateTime<Utc>, signature: Signature, rssi: i16) -> DeviceState {
+    #[must_use] pub fn new(date_time: DateTime<Utc>, signature: Signature, rssi: i16) -> DeviceState {
         DeviceState { date_time, signature, rssi }
     }
 
-    pub fn from_event(event: &DiscoveryEvent) -> DeviceState {
+    #[must_use] pub fn from_event(event: &DiscoveryEvent) -> DeviceState {
         DeviceState {
             date_time: event.date_time,
             signature: event.signature.clone(), 
