@@ -12,7 +12,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use humantime::FormattedDuration;
-use ratatui::{prelude::*, widgets::{Paragraph, Row, Table}};
+use ratatui::{prelude::*, widgets::{Paragraph, Row, Table, Cell}};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders}
@@ -85,21 +85,20 @@ fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: Date
                 (named, anon), 
                 (state, comparison)
             | {
-            let shared_rows = vec![
-                age_summary(comparison).to_string(), 
-                format!("{}",state.rssi), 
-                rssi_summary(comparison)
+            let default_style = match comparison.rssi {
+                RssiComparison::New => Style::default().fg(Color::Red),
+                _ => Style::default().fg(Color::Black)
+            };
+            let shared_cells = vec![
+                Cell::from(age_summary(comparison).to_string()).style(default_style), 
+                Cell::from(format!("{}",state.rssi)).style(default_style), 
+                Cell::from(rssi_summary(comparison)).style(default_style)
             ];
-            
             match &state.signature {
                 Signature::Named(n) => {
-                    let style = match comparison.rssi {
-                        RssiComparison::New => Style::default().fg(Color::Red),
-                        _ => Style::default().fg(Color::Black)
-                    };
+                    let name_cell = Cell::from(format!("{n}")).style(default_style);
                     let row 
-                        = Row::new([vec![format!("{n}")], shared_rows].concat())
-                            .style(style);
+                        = Row::new([vec![name_cell], shared_cells].concat());
                     ([named, vec![row]].concat(), anon)
                 },
                 Signature::Anonymous(d) => {
@@ -111,8 +110,9 @@ fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: Date
                             _ => Style::default().fg(Color::Black)
                         }
                     };
+                    let name_cell = Cell::from(name).style(style);
                     let row 
-                        = Row::new([vec![name], shared_rows].concat())
+                        = Row::new([vec![name_cell], shared_cells].concat())
                             .style(style);
                     (named, [anon, vec![row]].concat())
                 }
