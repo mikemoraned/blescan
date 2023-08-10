@@ -74,12 +74,8 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                         }
                     }
                 });
-            let named_list = List::new(named_items)
-                .block(Block::default().title("Named").borders(Borders::ALL))
-                .style(Style::default().fg(Color::Black));
-            let anon_list = List::new(anon_items)
-                .block(Block::default().title("Anonymous").borders(Borders::ALL))
-                .style(Style::default().fg(Color::Black));
+            let named_list = list(named_items, "Named");
+            let anon_list = list(anon_items, "Anonymous");
             let (main_layout, snapshot_layout) = layout(f);
             let runtime = format_duration((now - start).truncate_to_seconds().to_std().unwrap());
             let footer = Paragraph::new(
@@ -97,6 +93,12 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
         state.discover(events);
     }
     Ok(())
+}
+
+fn list<'a>(items: Vec<ListItem<'a>>, title: &'a str) -> List<'a> {
+    List::new(items)
+        .block(Block::default().title(title).borders(Borders::ALL))
+        .style(Style::default().fg(Color::Black))
 }
 
 fn layout(frame: &mut Frame<'_, CrosstermBackend<Stdout>>) -> (Rc<[Rect]>, Rc<[Rect]>) {
