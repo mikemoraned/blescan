@@ -12,7 +12,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use humantime::FormattedDuration;
-use ratatui::{prelude::*, widgets::{List, ListItem, Paragraph, Row, Table, Cell}};
+use ratatui::{prelude::*, widgets::{Paragraph, Row, Table}};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders}
@@ -85,35 +85,26 @@ fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: Date
                 (named, anon), 
                 (state, comparison)
             | {
+            let shared_rows = vec![
+                age_summary(&comparison).to_string(), 
+                format!("{}",state.rssi), 
+                rssi_summary(&comparison)
+            ];
             match &state.signature {
                 Signature::Named(n) => {
                     let row 
-                        = Row::new(vec![
-                            format!("{n}"), 
-                            age_summary(&comparison).to_string(), 
-                            format!("{}",state.rssi), 
-                            rssi_summary(&comparison)]);
+                        = Row::new([vec![format!("{n}")], shared_rows].concat());
                     ([named, vec![row]].concat(), anon)
                 },
                 Signature::Anonymous(d) => {
                     let row 
-                        = Row::new(vec![
-                            format!("{d:x}"), 
-                            age_summary(&comparison).to_string(), 
-                            format!("{}",state.rssi), 
-                            rssi_summary(&comparison)]);
+                        = Row::new([vec![format!("{d:x}")], shared_rows].concat());
                     (named, [anon, vec![row]].concat())
                 }
             }
         });
     (named_items, anon_items)   
 }
-
-// fn list<'a>(items: Vec<ListItem<'a>>, title: &'a str) -> List<'a> {
-//     List::new(items)
-//         .block(Block::default().title(title).borders(Borders::ALL))
-//         .style(Style::default().fg(Color::Black))
-// }
 
 fn age_summary(comparison: &Comparison) -> FormattedDuration {
     use humantime::format_duration;
