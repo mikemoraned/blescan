@@ -96,7 +96,7 @@ fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: Date
             ];
             match &state.signature {
                 Signature::Named(n) => {
-                    let name_cell = Cell::from(format!("{n}")).style(default_style);
+                    let name_cell = Cell::from(n.to_string()).style(default_style);
                     let row 
                         = Row::new([vec![name_cell], shared_cells].concat());
                     ([named, vec![row]].concat(), anon)
