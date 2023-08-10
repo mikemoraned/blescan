@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use blescan::{discover_btleplug::Scanner, state::State, signature::Signature};
-use chrono::{Utc, DurationRound};
+use chrono::Utc;
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
