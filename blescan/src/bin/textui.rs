@@ -86,9 +86,9 @@ fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: Date
                 (state, comparison)
             | {
             let shared_rows = vec![
-                age_summary(&comparison).to_string(), 
+                age_summary(comparison).to_string(), 
                 format!("{}",state.rssi), 
-                rssi_summary(&comparison)
+                rssi_summary(comparison)
             ];
             
             match &state.signature {
