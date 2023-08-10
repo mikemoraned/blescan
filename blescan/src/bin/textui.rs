@@ -58,7 +58,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
             let (main_layout, snapshot_layout) = layout(f);
             let runtime = format_duration((now - start).truncate_to_seconds().to_std().unwrap());
             let footer = Paragraph::new(
-                    format!("Now: {}\nRun time: {}\n(press 'q' to quit)", now, runtime))
+                    format!("Now: {now}\nRun time: {runtime}\n(press 'q' to quit)"))
                 .block(Block::default().title("Context").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
             f.render_widget(named_list, snapshot_layout[0]);
