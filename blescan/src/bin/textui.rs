@@ -11,7 +11,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::*, widgets::{List, ListItem}};
+use ratatui::{prelude::*, widgets::{List, ListItem, Paragraph}};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders}
@@ -45,6 +45,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
 
     let mut scanner = Scanner::new().await?;
     let mut state = State::default();
+    let start = Utc::now();
     loop {
         terminal.draw(|f| {
             let now = Utc::now();
@@ -79,7 +80,17 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
             let anon_list = List::new(anon_items)
                 .block(Block::default().title("Anonymous").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
-            let chunks = Layout::default()
+            let main_layout = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(90),
+                        Constraint::Percentage(10)
+                    ].as_ref()
+                )
+                .split(f.size());
+            let snapshot_layout = Layout::default()
                 .direction(Direction::Horizontal)
                 .margin(1)
                 .constraints(
@@ -88,9 +99,15 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                         Constraint::Percentage(50)
                     ].as_ref()
                 )
-                .split(f.size());
-            f.render_widget(named_list, chunks[0]);
-            f.render_widget(anon_list, chunks[1]);
+                .split(main_layout[0]);
+            let runtime = format_duration((now - start).truncate_to_seconds().to_std().unwrap());
+            let footer = Paragraph::new(
+                    format!("Now: {}\nRun time: {}\n(press 'q' to quit)", now, runtime))
+                .block(Block::default().title("Context").borders(Borders::ALL))
+                .style(Style::default().fg(Color::Black));;
+            f.render_widget(named_list, snapshot_layout[0]);
+            f.render_widget(anon_list, snapshot_layout[1]);
+            f.render_widget(footer, main_layout[1]);
         })?;
         if should_quit()? {
             break;
