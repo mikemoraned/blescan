@@ -90,20 +90,29 @@ fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: Date
                 format!("{}",state.rssi), 
                 rssi_summary(&comparison)
             ];
-            let style = match comparison.rssi {
-                RssiComparison::New => Style::default().fg(Color::Red),
-                _ => Style::default().fg(Color::Black)
-            };
+            
             match &state.signature {
                 Signature::Named(n) => {
+                    let style = match comparison.rssi {
+                        RssiComparison::New => Style::default().fg(Color::Red),
+                        _ => Style::default().fg(Color::Black)
+                    };
                     let row 
                         = Row::new([vec![format!("{n}")], shared_rows].concat())
                             .style(style);
                     ([named, vec![row]].concat(), anon)
                 },
                 Signature::Anonymous(d) => {
+                    let name = format!("{d:x}");
+                    let style = match comparison.rssi {
+                        RssiComparison::New => Style::default().fg(Color::Red),
+                        _ => match u8::from_str_radix(&name[0..2], 16) {
+                            Ok(index) => Style::default().fg(Color::Indexed(index)),
+                            _ => Style::default().fg(Color::Black)
+                        }
+                    };
                     let row 
-                        = Row::new([vec![format!("{d:x}")], shared_rows].concat())
+                        = Row::new([vec![name], shared_rows].concat())
                             .style(style);
                     (named, [anon, vec![row]].concat())
                 }
