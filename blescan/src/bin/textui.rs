@@ -4,14 +4,15 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison}};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}};
 use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::*, widgets::{List, ListItem, Paragraph}};
+use humantime::FormattedDuration;
+use ratatui::{prelude::*, widgets::{Paragraph, Row, Table}};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders}
@@ -52,17 +53,17 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
         terminal.draw(|f| {
             let now = Utc::now();
             let (named_items, anon_items) 
-                = snapshot_to_list_items(&current_snapshot, &previous_snapshot, now);
-            let named_list = list(named_items, "Named");
-            let anon_list = list(anon_items, "Anonymous");
+                = snapshot_to_table_rows(&current_snapshot, &previous_snapshot, now);
+            let named_table = table(named_items, "Named");
+            let anon_table = table(anon_items, "Anonymous");
             let (main_layout, snapshot_layout) = layout(f);
             let runtime = format_duration((now - start).truncate_to_seconds().to_std().unwrap());
             let footer = Paragraph::new(
                     format!("Now: {now}\nRun time: {runtime}\n(press 'q' to quit)"))
                 .block(Block::default().title("Context").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
-            f.render_widget(named_list, snapshot_layout[0]);
-            f.render_widget(anon_list, snapshot_layout[1]);
+            f.render_widget(named_table, snapshot_layout[0]);
+            f.render_widget(anon_table, snapshot_layout[1]);
             f.render_widget(footer, main_layout[1]);
         })?;
         if should_quit()? {
@@ -75,10 +76,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     Ok(())
 }
 
-fn snapshot_to_list_items<'a>(current: &Snapshot, previous: &Snapshot, now: DateTime<Utc>) -> (Vec<ListItem<'a>>, Vec<ListItem<'a>>) {
-    use humantime::format_duration;
-    use blescan::chrono_extra::Truncate;
-
+fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: DateTime<Utc>) -> (Vec<Row<'a>>, Vec<Row<'a>>) {
     let ordered = current.order_by_age_and_volume();
     let compared_to_previous = ordered.compared_to(now, previous);
     let (named_items, anon_items)   
@@ -87,36 +85,59 @@ fn snapshot_to_list_items<'a>(current: &Snapshot, previous: &Snapshot, now: Date
                 (named, anon), 
                 (state, comparison)
             | {
-            let age_summary 
-                = format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap());
-            let rssi_summary = match comparison.rssi {
-                RssiComparison::Louder => "↑",
-                RssiComparison::Quieter => "⌄",
-                RssiComparison::Same => "=",
-                RssiComparison::New => "*"
+            let shared_rows = vec![
+                age_summary(&comparison).to_string(), 
+                format!("{}",state.rssi), 
+                rssi_summary(&comparison)
+            ];
+            let style = match comparison.rssi {
+                RssiComparison::New => Style::default().fg(Color::Red),
+                _ => Style::default().fg(Color::Black)
             };
             match &state.signature {
                 Signature::Named(n) => {
-                    let item 
-                        = ListItem::new(format!("{:<32}[{}]:{:>4}({})", 
-                            n, age_summary, state.rssi, rssi_summary));
-                    ([named, vec![item]].concat(), anon)
+                    let row 
+                        = Row::new([vec![format!("{n}")], shared_rows].concat())
+                            .style(style);
+                    ([named, vec![row]].concat(), anon)
                 },
                 Signature::Anonymous(d) => {
-                    let item 
-                        = ListItem::new(format!("{:x}[{}]:{:>4}({})", 
-                            d, age_summary, state.rssi, rssi_summary));
-                    (named, [anon, vec![item]].concat())
+                    let row 
+                        = Row::new([vec![format!("{d:x}")], shared_rows].concat())
+                            .style(style);
+                    (named, [anon, vec![row]].concat())
                 }
             }
         });
     (named_items, anon_items)   
 }
 
-fn list<'a>(items: Vec<ListItem<'a>>, title: &'a str) -> List<'a> {
-    List::new(items)
-        .block(Block::default().title(title).borders(Borders::ALL))
+fn age_summary(comparison: &Comparison) -> FormattedDuration {
+    use humantime::format_duration;
+    use blescan::chrono_extra::Truncate;
+
+    format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap())
+}
+
+fn rssi_summary(comparison: &Comparison) -> String {
+    match comparison.rssi {
+        RssiComparison::Louder => "↑",
+        RssiComparison::Quieter => "⌄",
+        RssiComparison::Same => "=",
+        RssiComparison::New => "*"
+    }.to_string()
+} 
+
+fn table<'a>(rows: Vec<Row<'a>>, title: &'a str) -> Table<'a> {
+    Table::new(rows)
         .style(Style::default().fg(Color::Black))
+        .block(Block::default().title(title).borders(Borders::ALL))
+        .widths(&[Constraint::Length(32), Constraint::Length(4), Constraint::Length(4), Constraint::Length(6)])
+        .header(
+            Row::new(vec!["\nName", "Last\nSeen", "\nRssi", "\nChange"])
+                .height(2)
+                .style(Style::default().fg(Color::Yellow))
+        )
 }
 
 fn layout(frame: &mut Frame<'_, CrosstermBackend<Stdout>>) -> (Rc<[Rect]>, Rc<[Rect]>) {
