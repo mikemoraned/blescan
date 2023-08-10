@@ -72,7 +72,7 @@ pub struct Comparison {
     pub rssi: RssiComparison
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum RssiComparison {
     Louder,
     Quieter,
@@ -159,6 +159,10 @@ mod test {
 
     #[test]
     fn relative_volume() {
+        fn just_rssi(v: &[(DeviceState, Comparison)]) -> Vec<RssiComparison> {
+            v.iter().map(|(_,c)|{ c.rssi}).collect()
+        }
+        
         let previous = 
             Snapshot(vec![
                 DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -10),
@@ -195,9 +199,6 @@ mod test {
         let actual_comparisons 
             = current.compared_to(now, &previous);
 
-        fn just_rssi(v: &Vec<(DeviceState, Comparison)>) -> Vec<RssiComparison> {
-            v.iter().map(|(_,c)|{ c.rssi.clone()}).collect()
-        }
         assert_eq!(just_rssi(&actual_comparisons), just_rssi(&expected_comparisons));
         assert_eq!(actual_comparisons, expected_comparisons);
     }
