@@ -1,6 +1,6 @@
 use std::{
     io::{self, Stdout},
-    time::Duration, error::Error,
+    time::Duration, error::Error, rc::Rc,
 };
 
 use anyhow::{Context, Result};
@@ -80,31 +80,12 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
             let anon_list = List::new(anon_items)
                 .block(Block::default().title("Anonymous").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
-            let main_layout = Layout::default()
-                .direction(Direction::Vertical)
-                .margin(1)
-                .constraints(
-                    [
-                        Constraint::Percentage(90),
-                        Constraint::Percentage(10)
-                    ].as_ref()
-                )
-                .split(f.size());
-            let snapshot_layout = Layout::default()
-                .direction(Direction::Horizontal)
-                .margin(1)
-                .constraints(
-                    [
-                        Constraint::Percentage(50),
-                        Constraint::Percentage(50)
-                    ].as_ref()
-                )
-                .split(main_layout[0]);
+            let (main_layout, snapshot_layout) = layout(f);
             let runtime = format_duration((now - start).truncate_to_seconds().to_std().unwrap());
             let footer = Paragraph::new(
                     format!("Now: {}\nRun time: {}\n(press 'q' to quit)", now, runtime))
                 .block(Block::default().title("Context").borders(Borders::ALL))
-                .style(Style::default().fg(Color::Black));;
+                .style(Style::default().fg(Color::Black));
             f.render_widget(named_list, snapshot_layout[0]);
             f.render_widget(anon_list, snapshot_layout[1]);
             f.render_widget(footer, main_layout[1]);
@@ -116,6 +97,31 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
         state.discover(events);
     }
     Ok(())
+}
+
+fn layout(frame: &mut Frame<'_, CrosstermBackend<Stdout>>) -> (Rc<[Rect]>, Rc<[Rect]>) {
+    let main_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(90),
+                Constraint::Percentage(10)
+            ].as_ref()
+        )
+        .split(frame.size());
+    let snapshot_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(50),
+                Constraint::Percentage(50)
+            ].as_ref()
+        )
+        .split(main_layout[0]);
+
+    (main_layout, snapshot_layout)
 }
 
 // /// Render the application. This is where you would draw the application UI. This example just
