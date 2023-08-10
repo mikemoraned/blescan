@@ -52,7 +52,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
         terminal.draw(|f| {
             let now = Utc::now();
             let (named_items, anon_items) 
-                = snapshot_to_list_items(current_snapshot.clone(), previous_snapshot.clone(), now);
+                = snapshot_to_list_items(&current_snapshot, &previous_snapshot, now);
             let named_list = list(named_items, "Named");
             let anon_list = list(anon_items, "Anonymous");
             let (main_layout, snapshot_layout) = layout(f);
@@ -75,12 +75,12 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     Ok(())
 }
 
-fn snapshot_to_list_items<'a>(current: Snapshot, previous: Snapshot, now: DateTime<Utc>) -> (Vec<ListItem<'a>>, Vec<ListItem<'a>>) {
+fn snapshot_to_list_items<'a>(current: &Snapshot, previous: &Snapshot, now: DateTime<Utc>) -> (Vec<ListItem<'a>>, Vec<ListItem<'a>>) {
     use humantime::format_duration;
     use blescan::chrono_extra::Truncate;
 
     let ordered = current.order_by_age_and_volume();
-    let compared_to_previous = ordered.compared_to(now, previous.clone());
+    let compared_to_previous = ordered.compared_to(now, previous);
     let (named_items, anon_items)   
         = compared_to_previous.iter().fold((Vec::new(), Vec::new()), 
             |

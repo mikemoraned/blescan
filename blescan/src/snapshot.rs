@@ -38,7 +38,7 @@ impl Snapshot {
         Snapshot(ordered)
     }
 
-    #[must_use] pub fn compared_to(&self, now: chrono::DateTime<chrono::Utc>, previous: Snapshot) 
+    #[must_use] pub fn compared_to(&self, now: chrono::DateTime<chrono::Utc>, previous: &Snapshot) 
         -> Vec<(DeviceState, Comparison)> {
         let previous_rssi: HashMap<Signature, i16> = previous.0.iter().map(|d| {
             (d.signature.clone(), d.rssi)
@@ -153,7 +153,7 @@ mod test {
                 }),
             ];
         let actual_comparisons 
-            = snapshot.compared_to(now, Snapshot::default());
+            = snapshot.compared_to(now, &Snapshot::default());
         assert_eq!(actual_comparisons, expected_comparisons);
     }
 
@@ -193,7 +193,7 @@ mod test {
                 }),
             ];
         let actual_comparisons 
-            = current.compared_to(now, previous);
+            = current.compared_to(now, &previous);
 
         fn just_rssi(v: &Vec<(DeviceState, Comparison)>) -> Vec<RssiComparison> {
             v.iter().map(|(_,c)|{ c.rssi.clone()}).collect()
