@@ -7,6 +7,14 @@ pub enum Signature {
     Anonymous(md5::Digest)
 }
 
+impl Ord for Signature {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let self_s = self.normalised_string();
+        let other_s = other.normalised_string();
+        self_s.cmp(&other_s)
+    }
+}
+
 impl PartialOrd for Signature {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
          let self_s = self.normalised_string();

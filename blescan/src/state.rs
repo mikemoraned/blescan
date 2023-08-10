@@ -10,7 +10,7 @@ pub struct State {
 impl State {
     #[must_use] pub fn snapshot(&self) -> Snapshot {
         let mut s : Vec<(Signature, DeviceState)> = self.state.clone().into_iter().collect();
-        s.sort_by(|(a,_),(b,_)| a.partial_cmp(b).unwrap());
+        s.sort_by(|(a,_),(b,_)| a.cmp(b));
         Snapshot(s.into_iter().map(|(_,v)| v.clone()).collect())
     }
 

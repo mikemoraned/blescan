@@ -8,13 +8,13 @@ impl std::fmt::Display for Snapshot {
         writeln!(f, "Named:")?;
         for state in &self.0 {
             if let Signature::Named(_) = state.signature {
-                self.fmt_row(state, f)?;
+                writeln!(f, "{:>4}, {:>4}", state.signature, state.rssi)?;
             }
         }
         writeln!(f, "Anonymous:")?;
         for state in &self.0 {
             if let Signature::Anonymous(_) = state.signature {
-                self.fmt_row(state, f)?;
+                writeln!(f, "{:>4}, {:>4}", state.signature, state.rssi)?;
             }
         }
         write!(f, "")
@@ -22,14 +22,10 @@ impl std::fmt::Display for Snapshot {
 }
 
 impl Snapshot {
-    fn fmt_row(&self, state: &DeviceState, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{:>4}, {:>4}", state.signature, state.rssi)
-    }
-
     #[must_use] pub fn order_by_age_oldest_last(&self) -> Snapshot {
         let mut ordered_by_age : Vec<DeviceState> = self.0.clone();
         ordered_by_age.sort_by(
-            |a, b| b.date_time.partial_cmp(&a.date_time).unwrap());
+            |a, b| b.date_time.cmp(&a.date_time));
         Snapshot(ordered_by_age)
     }
 
