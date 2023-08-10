@@ -121,7 +121,7 @@ mod test {
                 DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("1".to_string()), -3)
             ]);
         let actual_order = initial_order.order_by_age_and_volume();
-        fn just_rssi(v: &Vec<DeviceState>) -> Vec<i16> {
+        fn just_rssi(v: &[DeviceState]) -> Vec<i16> {
             v.iter().map(|d|{ d.rssi}).collect()
         }
         assert_eq!(just_rssi(&actual_order.0), just_rssi(&expected_order.0));
