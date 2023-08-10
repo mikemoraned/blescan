@@ -24,11 +24,18 @@ impl std::fmt::Display for Snapshot {
 }
 
 impl Snapshot {
-    #[must_use] pub fn order_by_age_oldest_last(&self) -> Snapshot {
-        let mut ordered_by_age : Vec<DeviceState> = self.0.clone();
-        ordered_by_age.sort_by(
-            |a, b| b.date_time.cmp(&a.date_time));
-        Snapshot(ordered_by_age)
+    #[must_use] pub fn order_by_age_and_volume(&self) -> Snapshot {
+        let mut ordered : Vec<DeviceState> = self.0.clone();
+        ordered.sort_by(
+            |a, b| 
+            if a.date_time == b.date_time {
+                b.rssi.cmp(&a.rssi)
+            }
+            else {
+                b.date_time.cmp(&a.date_time)
+            }
+        );
+        Snapshot(ordered)
     }
 
     #[must_use] pub fn compared_to(&self, now: chrono::DateTime<chrono::Utc>, previous: Snapshot) 
@@ -97,12 +104,34 @@ mod test {
                 DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named("2".to_string()), -1),
                 DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -1),
             ]);
-        let actual_order = initial_order.order_by_age_oldest_last();
+        let actual_order = initial_order.order_by_age_and_volume();
         assert_eq!(actual_order, expected_order);
     }
 
     #[test]
-    fn age() {
+    fn order_by_volume_when_same_age() {
+        let initial_order = 
+            Snapshot(vec![
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("1".to_string()), -3),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("2".to_string()), -2),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -1)
+            ]);
+        let expected_order = 
+            Snapshot(vec![
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -1),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("2".to_string()), -2),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("1".to_string()), -3)
+            ]);
+        let actual_order = initial_order.order_by_age_and_volume();
+        fn just_rssi(v: &Vec<DeviceState>) -> Vec<i16> {
+            v.iter().map(|d|{ d.rssi.clone()}).collect()
+        }
+        assert_eq!(just_rssi(&actual_order.0), just_rssi(&expected_order.0));
+        assert_eq!(actual_order, expected_order);
+    }
+
+    #[test]
+    fn relative_age() {
         let snapshot = 
             Snapshot(vec![
                 DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -1),
@@ -131,7 +160,7 @@ mod test {
     }
 
     #[test]
-    fn relative_to_previous() {
+    fn relative_volume() {
         let previous = 
             Snapshot(vec![
                 DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -10),

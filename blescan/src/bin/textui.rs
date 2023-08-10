@@ -79,8 +79,8 @@ fn snapshot_to_list_items<'a>(current: Snapshot, previous: Snapshot, now: DateTi
     use humantime::format_duration;
     use blescan::chrono_extra::Truncate;
 
-    let ordered_by_age = current.order_by_age_oldest_last();
-    let compared_to_previous = ordered_by_age.compared_to(now, previous.clone());
+    let ordered = current.order_by_age_and_volume();
+    let compared_to_previous = ordered.compared_to(now, previous.clone());
     let (named_items, anon_items)   
         = compared_to_previous.iter().fold((Vec::new(), Vec::new()), 
             |
