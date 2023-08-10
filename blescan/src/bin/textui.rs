@@ -4,8 +4,8 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature};
-use chrono::Utc;
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::Snapshot};
+use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -49,31 +49,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     loop {
         terminal.draw(|f| {
             let now = Utc::now();
-            let ordered_by_age = state.snapshot().order_by_age_oldest_last();
-            let with_age = ordered_by_age.compared_to(now);
-            let (named_items, anon_items)   
-                = with_age.iter().fold((Vec::new(), Vec::new()), 
-                    |
-                        (named, anon), 
-                        (state, comparison)
-                    | {
-                    let age_summary 
-                        = format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap());
-                    match &state.signature {
-                        Signature::Named(n) => {
-                            let item 
-                                = ListItem::new(format!("{:<32}[{}]:{:>4}", 
-                                    n, age_summary, state.rssi));
-                            ([named, vec![item]].concat(), anon)
-                        },
-                        Signature::Anonymous(d) => {
-                            let item 
-                                = ListItem::new(format!("{:x}[{}]:{:>4}", 
-                                    d, age_summary, state.rssi));
-                            (named, [anon, vec![item]].concat())
-                        }
-                    }
-                });
+            let (named_items, anon_items) = snapshot_to_list_items(state.snapshot(), now);
             let named_list = list(named_items, "Named");
             let anon_list = list(anon_items, "Anonymous");
             let (main_layout, snapshot_layout) = layout(f);
@@ -93,6 +69,38 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
         state.discover(events);
     }
     Ok(())
+}
+
+fn snapshot_to_list_items<'a>(snapshot: Snapshot, now: DateTime<Utc>) -> (Vec<ListItem<'a>>, Vec<ListItem<'a>>) {
+    use humantime::format_duration;
+    use blescan::chrono_extra::Truncate;
+
+    let ordered_by_age = snapshot.order_by_age_oldest_last();
+    let with_age = ordered_by_age.compared_to(now);
+    let (named_items, anon_items)   
+        = with_age.iter().fold((Vec::new(), Vec::new()), 
+            |
+                (named, anon), 
+                (state, comparison)
+            | {
+            let age_summary 
+                = format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap());
+            match &state.signature {
+                Signature::Named(n) => {
+                    let item 
+                        = ListItem::new(format!("{:<32}[{}]:{:>4}", 
+                            n, age_summary, state.rssi));
+                    ([named, vec![item]].concat(), anon)
+                },
+                Signature::Anonymous(d) => {
+                    let item 
+                        = ListItem::new(format!("{:x}[{}]:{:>4}", 
+                            d, age_summary, state.rssi));
+                    (named, [anon, vec![item]].concat())
+                }
+            }
+        });
+    (named_items, anon_items)   
 }
 
 fn list<'a>(items: Vec<ListItem<'a>>, title: &'a str) -> List<'a> {
@@ -125,31 +133,6 @@ fn layout(frame: &mut Frame<'_, CrosstermBackend<Stdout>>) -> (Rc<[Rect]>, Rc<[R
 
     (main_layout, snapshot_layout)
 }
-
-// /// Render the application. This is where you would draw the application UI. This example just
-// /// draws a greeting.
-// fn render_app(f: &mut ratatui::Frame<CrosstermBackend<Stdout>>) {
-//     // let greeting = Paragraph::new("Hello World! (press 'q' to quit)");
-//     // frame.render_widget(greeting, frame.size());
-//     let chunks = Layout::default()
-//         .direction(Direction::Horizontal)
-//         .margin(1)
-//         .constraints(
-//             [
-//                 Constraint::Percentage(50),
-//                 Constraint::Percentage(50)
-//             ].as_ref()
-//         )
-//         .split(f.size());
-//     let block = Block::default()
-//          .title("Named")
-//          .borders(Borders::ALL);
-//     f.render_widget(block, chunks[0]);
-//     let block = Block::default()
-//          .title("Anonymous")
-//          .borders(Borders::ALL);
-//     f.render_widget(block, chunks[1]);
-// }
 
 fn should_quit() -> Result<bool> {
     if event::poll(Duration::from_millis(250)).context("event poll failed")? {
