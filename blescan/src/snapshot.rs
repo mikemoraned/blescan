@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, cmp::Ordering};
 
 use crate::{ signature::Signature, device_state::DeviceState};
 
@@ -47,12 +47,10 @@ impl Snapshot {
             let curr = &d.rssi;
             let rssi_comparison : RssiComparison  = match previous_rssi.get(&d.signature) {
                 Some(prev) => {
-                    if curr > prev {
-                        RssiComparison::Louder
-                    } else if prev == curr {
-                        RssiComparison::Same
-                    } else {
-                        RssiComparison::Quieter
+                    match curr.cmp(prev) {
+                        Ordering::Greater => RssiComparison::Louder,
+                        Ordering::Equal => RssiComparison::Same,
+                        Ordering::Less => RssiComparison::Quieter
                     }
                 },
                 None => RssiComparison::New
