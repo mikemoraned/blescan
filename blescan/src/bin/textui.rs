@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::Snapshot};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison}};
 use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -46,10 +46,13 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     let mut scanner = Scanner::new().await?;
     let mut state = State::default();
     let start = Utc::now();
+    let mut previous_snapshot = Snapshot::default();
     loop {
+        let current_snapshot = state.snapshot();
         terminal.draw(|f| {
             let now = Utc::now();
-            let (named_items, anon_items) = snapshot_to_list_items(state.snapshot(), now);
+            let (named_items, anon_items) 
+                = snapshot_to_list_items(current_snapshot.clone(), previous_snapshot.clone(), now);
             let named_list = list(named_items, "Named");
             let anon_list = list(anon_items, "Anonymous");
             let (main_layout, snapshot_layout) = layout(f);
@@ -67,35 +70,42 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
         }
         let events = scanner.scan().await?;
         state.discover(events);
+        previous_snapshot = current_snapshot;
     }
     Ok(())
 }
 
-fn snapshot_to_list_items<'a>(snapshot: Snapshot, now: DateTime<Utc>) -> (Vec<ListItem<'a>>, Vec<ListItem<'a>>) {
+fn snapshot_to_list_items<'a>(current: Snapshot, previous: Snapshot, now: DateTime<Utc>) -> (Vec<ListItem<'a>>, Vec<ListItem<'a>>) {
     use humantime::format_duration;
     use blescan::chrono_extra::Truncate;
 
-    let ordered_by_age = snapshot.order_by_age_oldest_last();
-    let with_age = ordered_by_age.compared_to(now);
+    let ordered_by_age = current.order_by_age_oldest_last();
+    let compared_to_previous = ordered_by_age.compared_to(now, previous.clone());
     let (named_items, anon_items)   
-        = with_age.iter().fold((Vec::new(), Vec::new()), 
+        = compared_to_previous.iter().fold((Vec::new(), Vec::new()), 
             |
                 (named, anon), 
                 (state, comparison)
             | {
             let age_summary 
                 = format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap());
+            let rssi_summary = match comparison.rssi {
+                RssiComparison::Louder => "↑",
+                RssiComparison::Quieter => "⌄",
+                RssiComparison::Same => "=",
+                RssiComparison::New => "*"
+            };
             match &state.signature {
                 Signature::Named(n) => {
                     let item 
-                        = ListItem::new(format!("{:<32}[{}]:{:>4}", 
-                            n, age_summary, state.rssi));
+                        = ListItem::new(format!("{:<32}[{}]:{:>4}({})", 
+                            n, age_summary, state.rssi, rssi_summary));
                     ([named, vec![item]].concat(), anon)
                 },
                 Signature::Anonymous(d) => {
                     let item 
-                        = ListItem::new(format!("{:x}[{}]:{:>4}", 
-                            d, age_summary, state.rssi));
+                        = ListItem::new(format!("{:x}[{}]:{:>4}({})", 
+                            d, age_summary, state.rssi, rssi_summary));
                     (named, [anon, vec![item]].concat())
                 }
             }
