@@ -4,7 +4,7 @@ I was playing about with a different project that uses BLE. I noticed that I was
 
 Hence, this small project.
 
-![screenshot of UI](ui.png)
+![screenshot of UI](./ui.png)
 
 ## How to use
 
