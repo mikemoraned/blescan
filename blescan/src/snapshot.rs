@@ -6,13 +6,13 @@ pub struct Snapshot(pub Vec<DeviceState>);
 impl std::fmt::Display for Snapshot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Named:")?;
-        for state in self.0.iter() {
+        for state in &self.0 {
             if let Signature::Named(_) = state.signature {
                 self.fmt_row(state, f)?;
             }
         }
         writeln!(f, "Anonymous:")?;
-        for state in self.0.iter() {
+        for state in &self.0 {
             if let Signature::Anonymous(_) = state.signature {
                 self.fmt_row(state, f)?;
             }
@@ -26,14 +26,14 @@ impl Snapshot {
         writeln!(f, "{:>4}, {:>4}", state.signature, state.rssi)
     }
 
-    pub fn order_by_age_oldest_last(&self) -> Snapshot {
+    #[must_use] pub fn order_by_age_oldest_last(&self) -> Snapshot {
         let mut ordered_by_age : Vec<DeviceState> = self.0.clone();
         ordered_by_age.sort_by(
             |a, b| b.date_time.partial_cmp(&a.date_time).unwrap());
         Snapshot(ordered_by_age)
     }
 
-    pub fn compared_to(&self, baseline: chrono::DateTime<chrono::Utc>) 
+    #[must_use] pub fn compared_to(&self, baseline: chrono::DateTime<chrono::Utc>) 
         -> Vec<(DeviceState, Comparison)> {
         self.0.iter().map(|d| {
             (

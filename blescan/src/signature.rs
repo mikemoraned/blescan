@@ -17,27 +17,27 @@ impl PartialOrd for Signature {
 
 impl Signature {
     fn normalised_string(&self) -> String {
-        use Signature::*;
+        use Signature::{Anonymous, Named};
         match self {
-            Named(n) => format!("Named:{}", n),
-            Anonymous(d) => format!("Anonymous:{:x}", d)
+            Named(n) => format!("Named:{n}"),
+            Anonymous(d) => format!("Anonymous:{d:x}")
         }
     }
 }
 
 impl std::fmt::Display for Signature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Signature::*;
+        use Signature::{Anonymous, Named};
         match self {
-            Named(n) => write!(f, "{:>32}", n)?,
-            Anonymous(d) => write!(f, "{:x}", d)?
+            Named(n) => write!(f, "{n:>32}")?,
+            Anonymous(d) => write!(f, "{d:x}")?
         }
         write!(f, "")
     }
 }
 
 impl Signature {
-    pub fn find(properties: &PeripheralProperties) -> Option<Signature> {
+    #[must_use] pub fn find(properties: &PeripheralProperties) -> Option<Signature> {
         if let Some(local_name) = &properties.local_name {
             Some(Signature::Named(local_name.clone()))
         } else if !&properties.manufacturer_data.is_empty() {

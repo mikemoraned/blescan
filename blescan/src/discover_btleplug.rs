@@ -39,7 +39,7 @@ impl Scanner {
         let peripherals = self.adapter.peripherals().await?;
         let mut events = vec![];
         let current_time = Utc::now();
-        for peripheral in peripherals.iter() {
+        for peripheral in &peripherals {
             let properties = peripheral.properties().await?.unwrap();
             if let Some(signature) = Signature::find(&properties) {
                 if let Some(rssi) = properties.rssi {

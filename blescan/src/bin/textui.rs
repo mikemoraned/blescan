@@ -11,7 +11,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::*, widgets::*};
+use ratatui::{prelude::*, widgets::{List, ListItem}};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders}
