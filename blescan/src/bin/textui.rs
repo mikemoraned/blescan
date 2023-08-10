@@ -61,13 +61,13 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                     match &state.signature {
                         Signature::Named(n) => {
                             let item 
-                                = ListItem::new(format!("{:<32}[{}]:{:>4}\n", 
+                                = ListItem::new(format!("{:<32}[{}]:{:>4}", 
                                     n, age_summary, state.rssi));
                             ([named, vec![item]].concat(), anon)
                         },
                         Signature::Anonymous(d) => {
                             let item 
-                                = ListItem::new(format!("{:x}[{}]:{:>4}\n", 
+                                = ListItem::new(format!("{:x}[{}]:{:>4}", 
                                     d, age_summary, state.rssi));
                             (named, [anon, vec![item]].concat())
                         }
