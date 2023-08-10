@@ -41,6 +41,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
 
 async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
     use humantime::format_duration;
+    use blescan::chrono_extra::Truncate;
 
     let mut scanner = Scanner::new().await?;
     let mut state = State::default();
@@ -48,13 +49,14 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
     loop {
         terminal.draw(|f| {
             let ordered_by_age = state.snapshot().order_by_age_oldest_last();
+            let with_age = ordered_by_age.compared_to(start);
             let named_items : Vec<ListItem> 
-                = ordered_by_age.0.iter().flat_map(|state| {
-                    let age = (state.date_time.duration_round(chrono::Duration::seconds(1)).unwrap() 
-                            - start).to_std().unwrap();
+                = with_age.iter().flat_map(|(state, comparison)| {
+                    let age_summary 
+                        = format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap());
                     if let Signature::Named(n) = &state.signature {
                         Some(ListItem::new(format!(
-                            "{:<32}[{}]:{:>4}\n", n, format_duration(age), state.rssi)))
+                            "{:<32}[{}]:{:>4}\n", n, age_summary, state.rssi)))
                     }
                     else {
                         None
@@ -64,12 +66,12 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
                 .block(Block::default().title("Named").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
             let anon_items : Vec<ListItem> 
-                = ordered_by_age.0.iter().flat_map(|state| {
+                = with_age.iter().flat_map(|(state, comparison)| {
+                    let age_summary 
+                        = format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap());
                     if let Signature::Anonymous(d) = &state.signature {
-                        let age = (state.date_time.duration_round(chrono::Duration::seconds(1)).unwrap() 
-                            - start).to_std().unwrap();
                         Some(ListItem::new(format!(
-                            "{:x}[{}]:{:>4}\n", d, format_duration(age), state.rssi)))
+                            "{:x}[{}]:{:>4}\n", d, age_summary, state.rssi)))
                     }
                     else {
                         None
