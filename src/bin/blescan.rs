@@ -59,12 +59,12 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
             let (main_layout, snapshot_layout) = layout(f);
             let runtime = format_duration((now - start).truncate_to_seconds().to_std().unwrap());
             let footer = Paragraph::new(
-                    format!("Now: {now}\nRun time: {runtime}\n(press 'q' to quit)"))
+                    format!("Now: {now}, Total Run time: {runtime}\n(press 'q' to quit)"))
                 .block(Block::default().title("Context").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
             f.render_widget(named_table, snapshot_layout[0]);
             f.render_widget(anon_table, snapshot_layout[1]);
-            f.render_widget(footer, main_layout[1]);
+            f.render_widget(footer, main_layout[0]);
         })?;
         if should_quit()? {
             break;
@@ -155,8 +155,8 @@ fn layout(frame: &mut Frame<'_, CrosstermBackend<Stdout>>) -> (Rc<[Rect]>, Rc<[R
         .margin(1)
         .constraints(
             [
-                Constraint::Percentage(90),
-                Constraint::Percentage(10)
+                Constraint::Percentage(10),
+                Constraint::Percentage(90)
             ].as_ref()
         )
         .split(frame.size());
@@ -169,8 +169,7 @@ fn layout(frame: &mut Frame<'_, CrosstermBackend<Stdout>>) -> (Rc<[Rect]>, Rc<[R
                 Constraint::Percentage(50)
             ].as_ref()
         )
-        .split(main_layout[0]);
-
+        .split(main_layout[1]);
     (main_layout, snapshot_layout)
 }
 

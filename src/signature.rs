@@ -1,6 +1,5 @@
 use btleplug::api::PeripheralProperties;
 
-
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
 pub enum Signature {
     Named(String),
