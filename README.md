@@ -4,6 +4,8 @@ I was playing about with a different project that uses BLE. I noticed that I was
 
 Hence, this small project.
 
+![a screenshot](./ui.png)
+
 ## How to use
 
 I've only used it on a Mac, so it may not work as follows on other platforms. However, the underlying libraries it uses should work on other platforms.
