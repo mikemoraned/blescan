@@ -90,15 +90,21 @@ fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: Date
                 format!("{}",state.rssi), 
                 rssi_summary(&comparison)
             ];
+            let style = match comparison.rssi {
+                RssiComparison::New => Style::default().fg(Color::Red),
+                _ => Style::default().fg(Color::Black)
+            };
             match &state.signature {
                 Signature::Named(n) => {
                     let row 
-                        = Row::new([vec![format!("{n}")], shared_rows].concat());
+                        = Row::new([vec![format!("{n}")], shared_rows].concat())
+                            .style(style);
                     ([named, vec![row]].concat(), anon)
                 },
                 Signature::Anonymous(d) => {
                     let row 
-                        = Row::new([vec![format!("{d:x}")], shared_rows].concat());
+                        = Row::new([vec![format!("{d:x}")], shared_rows].concat())
+                            .style(style);
                     (named, [anon, vec![row]].concat())
                 }
             }
