@@ -50,33 +50,32 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
         terminal.draw(|f| {
             let ordered_by_age = state.snapshot().order_by_age_oldest_last();
             let with_age = ordered_by_age.compared_to(start);
-            let named_items : Vec<ListItem> 
-                = with_age.iter().flat_map(|(state, comparison)| {
+            let (named_items, anon_items)   
+                = with_age.iter().fold((Vec::new(), Vec::new()), 
+                    |
+                        (named, anon), 
+                        (state, comparison)
+                    | {
                     let age_summary 
                         = format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap());
-                    if let Signature::Named(n) = &state.signature {
-                        Some(ListItem::new(format!(
-                            "{:<32}[{}]:{:>4}\n", n, age_summary, state.rssi)))
+                    match &state.signature {
+                        Signature::Named(n) => {
+                            let item 
+                                = ListItem::new(format!("{:<32}[{}]:{:>4}\n", 
+                                    n, age_summary, state.rssi));
+                            ([named, vec![item]].concat(), anon)
+                        },
+                        Signature::Anonymous(d) => {
+                            let item 
+                                = ListItem::new(format!("{:x}[{}]:{:>4}\n", 
+                                    d, age_summary, state.rssi));
+                            (named, [anon, vec![item]].concat())
+                        }
                     }
-                    else {
-                        None
-                    }
-                }).collect();
+                });
             let named_list = List::new(named_items)
                 .block(Block::default().title("Named").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
-            let anon_items : Vec<ListItem> 
-                = with_age.iter().flat_map(|(state, comparison)| {
-                    let age_summary 
-                        = format_duration(comparison.relative_age.truncate_to_seconds().to_std().unwrap());
-                    if let Signature::Anonymous(d) = &state.signature {
-                        Some(ListItem::new(format!(
-                            "{:x}[{}]:{:>4}\n", d, age_summary, state.rssi)))
-                    }
-                    else {
-                        None
-                    }
-                }).collect();
             let anon_list = List::new(anon_items)
                 .block(Block::default().title("Anonymous").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Black));
