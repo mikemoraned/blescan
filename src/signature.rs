@@ -1,9 +1,10 @@
 use btleplug::api::PeripheralProperties;
+use serde::{Serialize, Deserialize};
 
-#[derive(Hash, Eq, PartialEq, Debug, Clone)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum Signature {
     Named(String),
-    Anonymous(md5::Digest)
+    Anonymous(String)
 }
 
 impl Ord for Signature {
@@ -27,7 +28,7 @@ impl Signature {
         use Signature::{Anonymous, Named};
         match self {
             Named(n) => format!("Named:{n}"),
-            Anonymous(d) => format!("Anonymous:{d:x}")
+            Anonymous(d) => format!("Anonymous:{d}")
         }
     }
 }
@@ -37,7 +38,7 @@ impl std::fmt::Display for Signature {
         use Signature::{Anonymous, Named};
         match self {
             Named(n) => write!(f, "{n:>32}")?,
-            Anonymous(d) => write!(f, "{d:x}")?
+            Anonymous(d) => write!(f, "{d}")?
         }
         write!(f, "")
     }
@@ -56,7 +57,7 @@ impl Signature {
                 context.consume(arbitrary_data);
             }
             let digest = context.compute();
-            Some(Signature::Anonymous(digest))
+            Some(Signature::Anonymous(format!("{:x}", digest)))
         }
         else {
             None

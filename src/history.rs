@@ -26,7 +26,10 @@ where
         }
     }
 
-    pub fn save(&self, _events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
+    pub fn save(&mut self, events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
+        for event in events {
+            serde_json::to_writer(&mut self.writer, event)?;
+        }
         Ok(())
     }
 }
@@ -48,7 +51,7 @@ mod test {
             DiscoveryEvent::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("Device 1".to_string()), -20)
         ];
         let mut buf = Cursor::new(Vec::new());
-        let sink = EventSink::to_writer(&mut buf);
+        let mut sink = EventSink::to_writer(&mut buf);
 
         sink.save(&events).unwrap();
 

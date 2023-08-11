@@ -102,7 +102,7 @@ fn snapshot_to_table_rows<'a>(current: &Snapshot, previous: &Snapshot, now: Date
                     ([named, vec![row]].concat(), anon)
                 },
                 Signature::Anonymous(d) => {
-                    let name = format!("{d:x}");
+                    let name = d.clone();
                     let style = match comparison.rssi {
                         RssiComparison::New => Style::default().fg(Color::Red),
                         _ => match u8::from_str_radix(&name[0..2], 16) {

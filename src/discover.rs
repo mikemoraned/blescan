@@ -1,7 +1,9 @@
 use chrono::{DateTime, Utc};
+use serde::{Serialize, Deserialize};
 
 use crate::signature::Signature;
 
+#[derive(Serialize, Deserialize)]
 pub struct DiscoveryEvent {
     pub date_time: DateTime<Utc>,
     pub signature: Signature,
