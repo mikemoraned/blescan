@@ -21,7 +21,7 @@ use ratatui::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = setup_terminal().context("setup failed")?;
-    let mut sink = EventSink::to_file(&Path::new("./history.json"));
+    let mut sink = EventSink::to_file(&Path::new("./history.json"))?;
     run(&mut sink, &mut terminal).await?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
