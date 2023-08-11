@@ -29,6 +29,7 @@ impl<'a> EventSink<'a> {
             serde_json::to_writer(&mut self.writer, event)?;
             writeln!(&mut self.writer, "")?;
         }
+        self.writer.flush()?;
         Ok(())
     }
 }
