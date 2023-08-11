@@ -2,22 +2,28 @@ use std::{path::Path, error::Error, io::Write, fs::OpenOptions};
 
 use crate::discover::DiscoveryEvent;
 
-// pub struct EventSink<'a>(Box<dyn Write + 'a>);
-pub struct EventSink;
+pub struct EventSink<W> {
+    writer: W
+}
 
-impl EventSink {
-    pub fn to_file<P>(path_arg: P) -> Result<EventSink, Box<dyn Error>> 
-        where P: AsRef<Path>
-    {
-        // let path = path_arg.as_ref();
-        // let w = OpenOptions::new()
-        //     .append(true)
-        //     .open(path)?;
-        Ok(EventSink)
-    }
+impl <W> EventSink<W> 
+where
+    W: Write
+{
+    // pub fn to_file<P>(path_arg: P) -> Result<EventSink<W>, Box<dyn Error>> 
+    //     where P: AsRef<Path>
+    // {
+    //     let path = path_arg.as_ref();
+    //     let writer: W = OpenOptions::new()
+    //         .append(true)
+    //         .open(path)?;
+    //     Ok(EventSink { writer })
+    // }
 
-    fn to_writer(w: &mut dyn Write) -> EventSink {
-        EventSink
+    fn to_writer(writer: W) -> EventSink<W> {
+        EventSink {
+            writer
+        }
     }
 
     pub fn save(&self, _events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
