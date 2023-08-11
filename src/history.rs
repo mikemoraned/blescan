@@ -56,5 +56,8 @@ mod test {
         sink.save(&events).unwrap();
 
         assert_eq!(buf.get_ref().is_empty(), false);
+        let expected = "foop";
+        let actual = String::from_utf8(buf.get_ref().to_vec()).unwrap();
+        assert_eq!(actual, expected);
     }
 }
