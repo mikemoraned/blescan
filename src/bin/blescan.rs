@@ -1,10 +1,10 @@
 use std::{
     io::{self, Stdout},
-    time::Duration, error::Error, rc::Rc,
+    time::Duration, error::Error, rc::Rc, path::Path,
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::EventSink};
 use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -21,7 +21,9 @@ use ratatui::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = setup_terminal().context("setup failed")?;
-    run(&mut terminal).await?;
+    let path = Path::new("./history.json");
+    let mut sink = EventSink::create_from_file(&path)?;
+    run(&mut sink, &mut terminal).await?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
 }
@@ -40,7 +42,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
     terminal.show_cursor().context("unable to show cursor")
 }
 
-async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
+async fn run<'a>(sink: &mut EventSink<'a>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
     use humantime::format_duration;
     use blescan::chrono_extra::Truncate;
 
@@ -70,6 +72,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Bo
             break;
         }
         let events = scanner.scan().await?;
+        sink.save(&events)?;
         state.discover(&events);
         previous_snapshot = current_snapshot;
     }

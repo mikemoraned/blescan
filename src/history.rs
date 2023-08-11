@@ -1,28 +1,26 @@
-use std::{path::Path, error::Error, io::Write, fs::OpenOptions};
+use std::{path::Path, error::Error, io::{Write, BufWriter}, fs::OpenOptions};
 
 use crate::discover::DiscoveryEvent;
 
-pub struct EventSink<W> {
-    writer: W
+pub struct EventSink<'a> {
+    writer: Box<dyn std::io::Write + 'a>
 }
 
-impl <W> EventSink<W> 
-where
-    W: Write
-{
-    // pub fn to_file<P>(path_arg: P) -> Result<EventSink<W>, Box<dyn Error>> 
-    //     where P: AsRef<Path>
-    // {
-    //     let path = path_arg.as_ref();
-    //     let writer: W = OpenOptions::new()
-    //         .append(true)
-    //         .open(path)?;
-    //     Ok(EventSink { writer })
-    // }
-
-    fn to_writer(writer: W) -> EventSink<W> {
+impl<'a> EventSink<'a> {
+    pub fn create_from_file<P>(path_arg: P) -> Result<EventSink<'a>, Box<dyn Error>> 
+        where P: AsRef<Path> + 'a
+    {
+        let path = path_arg.as_ref();
+        let file = OpenOptions::new()
+            .append(true)
+            .open(path)?;
+        let buf_writer = BufWriter::new(file);
+        Ok(EventSink::create_from_writer(buf_writer))
+    }
+    
+    pub fn create_from_writer(writer: impl Write + 'a) -> EventSink<'a> {
         EventSink {
-            writer
+            writer: Box::new(writer)
         }
     }
 
@@ -59,9 +57,10 @@ mod test {
                 -30)
         ];
         let mut buf = Cursor::new(Vec::new());
-        let mut sink = EventSink::to_writer(&mut buf);
-
-        sink.save(&events).unwrap();
+        {
+            let mut sink = EventSink::create_from_writer(&mut buf);
+            sink.save(&events).unwrap();
+        }
 
         assert_eq!(buf.get_ref().is_empty(), false);
         let expected = concat!(
