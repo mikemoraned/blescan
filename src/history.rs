@@ -2,6 +2,10 @@ use std::{path::Path, error::Error, io::{Write, BufWriter}, fs::OpenOptions};
 
 use crate::discover::DiscoveryEvent;
 
+pub trait EventSink {
+    fn save(&mut self, events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>>;
+}
+
 pub struct JsonLinesEventSink<'a> {
     writer: Box<dyn std::io::Write + 'a>
 }
@@ -24,7 +28,10 @@ impl<'a> JsonLinesEventSink<'a> {
         }
     }
 
-    pub fn save(&mut self, events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
+}
+
+impl<'a> EventSink for JsonLinesEventSink<'a> {
+    fn save(&mut self, events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
         for event in events {
             serde_json::to_writer(&mut self.writer, event)?;
             writeln!(&mut self.writer, "")?;
@@ -40,7 +47,7 @@ mod test {
 
     use chrono::{Utc, TimeZone};
 
-    use crate::{discover::DiscoveryEvent, signature::Signature};
+    use crate::{discover::DiscoveryEvent, signature::Signature, history::EventSink};
 
     use super::JsonLinesEventSink;
 

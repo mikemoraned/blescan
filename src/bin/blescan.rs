@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::JsonLinesEventSink};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::{JsonLinesEventSink, EventSink}};
 use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -42,7 +42,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
     terminal.show_cursor().context("unable to show cursor")
 }
 
-async fn run<'a>(sink: &mut JsonLinesEventSink<'a>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
+async fn run(sink: &mut dyn EventSink, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
     use humantime::format_duration;
     use blescan::chrono_extra::Truncate;
 
