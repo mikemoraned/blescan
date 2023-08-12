@@ -10,13 +10,11 @@ use crate::discover::DiscoveryEvent;
 use crate::signature::Signature;
 
 pub struct Scanner {
-    scans: u16,
     adapter: Adapter
 }
 
 impl Scanner {
     pub async fn new() -> Result<Scanner, Box<dyn Error>> {
-        let scans = 0;
         
         let manager = Manager::new().await?;
         let mut adapter_list = manager.adapters().await?;
@@ -25,12 +23,11 @@ impl Scanner {
         }
         let adapter = adapter_list.pop().unwrap();
         Ok(Scanner {
-            scans, adapter
+            adapter
         })
     }
 
     pub async fn scan(&mut self) -> Result<Vec<DiscoveryEvent>, Box<dyn Error>> {
-        self.scans += 1;        
         self.adapter
             .start_scan(ScanFilter::default())
             .await

@@ -1,16 +1,18 @@
 # blescan (Bluetooth Low Energy Scanner)
 
-I was playing about with a different project that uses BLE. I noticed that I was seeing some devices being discovered that I wasn't explictly searching for. So, I was curious what you could find out the devices around you.
+I was playing about with a [different project](https://github.com/mikemoraned/aranet4) that uses BLE. I noticed that I was seeing some devices being discovered that I wasn't explictly searching for. So, I was curious what you could passively find out about the devices around you.
 
 Hence, this small project.
 
-![screenshot of UI](./ui.png)
+![a screenshot](./ui.png)
+
+There are other projects that look nicer, but I was interested in what I could put together myself with the API's that are available, in the style of a Terminal UI.
 
 ## How to use
 
-I've only used it on a Mac, so it may not work as follows on other platforms. However, the underlying libraries it uses should work on other platforms.
+I've only used it on a Mac, so it may not work as follows on other platforms. The underlying libraries it uses should work on other platforms, so it should compile and run. However, _I have not tested those other platforms_.
 
-It's fairly simple:
+It's fairly simple to use:
 
     cargo run
 
@@ -29,4 +31,25 @@ Each device is shown with:
   - '⌄' = weaker
   - '\*' = newly-discovered (so nothing to compare to)
 
-Scans update every second.
+Scans update every second, and are always sorted by age (newest-first) then by RSSI strength (strongest-first).
+Anonymous devices are colored arbitrarily, but consistently, to help identify them as they move in the list.
+
+### Options
+
+To see all options, do:
+
+    cargo run -- -h
+
+To record all discovery events to file, do:
+
+    cargo run -- --record prefix.jsonl
+
+(the file prefix can be anything you want but must end with `.jsonl`)
+
+This will save all discovery events (what signatures are seen, when, and with what rssi) to a new file, in [jsonl format](https://jsonlines.org).
+
+To instead save events to an SQLite DB, do:
+
+    cargo run -- --record prefix.sqlite
+
+If it doesn't already exist, this will create the DB file with the right schema.
