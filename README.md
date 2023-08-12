@@ -33,3 +33,17 @@ Each device is shown with:
 
 Scans update every second, and are always sorted by age (newest-first) then by RSSI strength (strongest-first).
 Anonymous devices are colored arbitrarily, but consistently, to help identify them as they move in the list.
+
+### Options
+
+To see all options, do:
+
+    cargo run -- -h
+
+To record all discovery events to file, do:
+
+    cargo run -- --record prefix.jsonl
+
+(the file prefix can be anything you want but must end with `.jsonl`)
+
+This will save all discovery events (what signatures are seen, when, and with what rssi) to a new file, in [jsonl format](https://jsonlines.org).
