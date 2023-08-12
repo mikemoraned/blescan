@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::{EventSink, EventSinkFormat}};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::{EventSink, EventSinkFormat, NoopEventSink}};
 use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -17,16 +17,37 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders}
 };
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// path to record discovery events to (format inferred from suffix)
+    #[arg(short, long)]
+    record: Option<String>,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse();
     let mut terminal = setup_terminal().context("setup failed")?;
-    let path = Path::new("./history.jsonl");
-    let sink_format = EventSinkFormat::create_from_file(path).unwrap();
-    let mut sink = sink_format.to_sink().unwrap();
-    run(&mut sink, &mut terminal).await?;
+    let sink: Box<dyn EventSink> = sink(&args)?;
+    run(sink, &mut terminal).await?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
+}
+
+fn sink(args: &Args) -> Result<Box<dyn EventSink>, Box<dyn Error>> {
+    match &args.record {
+        Some(name) => {
+            let path = Path::new(&name);
+            let sink_format = EventSinkFormat::create_from_file(path)?;
+            Ok(Box::new(sink_format.to_sink()?))
+        }
+        None => { 
+            Ok(Box::new(NoopEventSink::new()))
+        }
+    }
 }
 
 fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
@@ -43,7 +64,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
     terminal.show_cursor().context("unable to show cursor")
 }
 
-async fn run(sink: &mut dyn EventSink, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
+async fn run(mut sink: Box<dyn EventSink>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
     use humantime::format_duration;
     use blescan::chrono_extra::Truncate;
 

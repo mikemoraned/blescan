@@ -74,6 +74,20 @@ impl<'a> EventSink for JsonLinesEventSink<'a> {
     }
 }
 
+pub struct NoopEventSink;
+
+impl NoopEventSink {
+    pub fn new() -> impl EventSink {
+        NoopEventSink
+    }
+}
+
+impl EventSink for NoopEventSink {
+    fn save(&mut self, _: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::io::Cursor;
