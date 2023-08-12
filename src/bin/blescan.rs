@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::{JsonLinesEventSink, EventSink}};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::{EventSink, EventSinkFormat}};
 use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -21,8 +21,9 @@ use ratatui::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = setup_terminal().context("setup failed")?;
-    let path = Path::new("./history.json");
-    let mut sink = JsonLinesEventSink::create_from_file(&path)?;
+    let path = Path::new("./history.jsonl");
+    let sink_format = EventSinkFormat::create_from_file(path).unwrap();
+    let mut sink = sink_format.to_sink().unwrap();
     run(&mut sink, &mut terminal).await?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
