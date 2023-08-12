@@ -2,12 +2,12 @@ use std::{path::Path, error::Error, io::{Write, BufWriter}, fs::OpenOptions};
 
 use crate::discover::DiscoveryEvent;
 
-pub struct EventSink<'a> {
+pub struct JsonLinesEventSink<'a> {
     writer: Box<dyn std::io::Write + 'a>
 }
 
-impl<'a> EventSink<'a> {
-    pub fn create_from_file<P>(path_arg: P) -> Result<EventSink<'a>, Box<dyn Error>> 
+impl<'a> JsonLinesEventSink<'a> {
+    pub fn create_from_file<P>(path_arg: P) -> Result<JsonLinesEventSink<'a>, Box<dyn Error>> 
         where P: AsRef<Path> + 'a
     {
         let path = path_arg.as_ref();
@@ -15,11 +15,11 @@ impl<'a> EventSink<'a> {
             .append(true)
             .open(path)?;
         let buf_writer = BufWriter::new(file);
-        Ok(EventSink::create_from_writer(buf_writer))
+        Ok(JsonLinesEventSink::create_from_writer(buf_writer))
     }
     
-    pub fn create_from_writer(writer: impl Write + 'a) -> EventSink<'a> {
-        EventSink {
+    pub fn create_from_writer(writer: impl Write + 'a) -> JsonLinesEventSink<'a> {
+        JsonLinesEventSink {
             writer: Box::new(writer)
         }
     }
@@ -42,7 +42,7 @@ mod test {
 
     use crate::{discover::DiscoveryEvent, signature::Signature};
 
-    use super::EventSink;
+    use super::JsonLinesEventSink;
 
 
     #[test]
@@ -59,7 +59,7 @@ mod test {
         ];
         let mut buf = Cursor::new(Vec::new());
         {
-            let mut sink = EventSink::create_from_writer(&mut buf);
+            let mut sink = JsonLinesEventSink::create_from_writer(&mut buf);
             sink.save(&events).unwrap();
         }
 

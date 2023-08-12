@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::EventSink};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::JsonLinesEventSink};
 use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -22,7 +22,7 @@ use ratatui::{
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = setup_terminal().context("setup failed")?;
     let path = Path::new("./history.json");
-    let mut sink = EventSink::create_from_file(&path)?;
+    let mut sink = JsonLinesEventSink::create_from_file(&path)?;
     run(&mut sink, &mut terminal).await?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
@@ -42,7 +42,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
     terminal.show_cursor().context("unable to show cursor")
 }
 
-async fn run<'a>(sink: &mut EventSink<'a>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
+async fn run<'a>(sink: &mut JsonLinesEventSink<'a>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
     use humantime::format_duration;
     use blescan::chrono_extra::Truncate;
 
