@@ -16,6 +16,7 @@ impl<'a> JsonLinesEventSink<'a> {
     {
         let path = path_arg.as_ref();
         let file = OpenOptions::new()
+            .create(true)
             .append(true)
             .open(path)?;
         let buf_writer = BufWriter::new(file);
@@ -27,7 +28,6 @@ impl<'a> JsonLinesEventSink<'a> {
             writer: Box::new(writer)
         }
     }
-
 }
 
 impl<'a> EventSink for JsonLinesEventSink<'a> {
