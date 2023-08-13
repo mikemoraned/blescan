@@ -17,8 +17,8 @@ impl State {
     pub fn discover(&mut self, events: &[DiscoveryEvent]) {
         for event in events {
             self.state.entry(event.signature.clone())
-                .and_modify(|s: &mut DeviceState| s.update(&event))
-                .or_insert(DeviceState::from_event(&event));
+                .and_modify(|s: &mut DeviceState| s.update(event))
+                .or_insert(DeviceState::from_event(event));
         }
     }
 }

@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::{EventSink, EventSinkFormat, NoopEventSink}};
+use blescan::{discover_btleplug::Scanner, state::State, signature::Signature, snapshot::{Snapshot, RssiComparison, Comparison}, history::{EventSink, EventSinkFormat, noop::NoopEventSink}};
 use chrono::{Utc, DateTime};
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -31,21 +31,21 @@ struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     let mut terminal = setup_terminal().context("setup failed")?;
-    let sink: Box<dyn EventSink> = sink(&args)?;
+    let sink: Box<dyn EventSink> = sink(&args).await?;
     run(sink, &mut terminal).await?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
 }
 
-fn sink(args: &Args) -> Result<Box<dyn EventSink>, Box<dyn Error>> {
+async fn sink(args: &Args) -> Result<Box<dyn EventSink>, Box<dyn Error>> {
     match &args.record {
         Some(name) => {
             let path = Path::new(&name);
             let sink_format = EventSinkFormat::create_from_file(path)?;
-            Ok(Box::new(sink_format.to_sink()?))
+            Ok(sink_format.to_sink().await?)
         }
         None => { 
-            Ok(Box::new(NoopEventSink::new()))
+            Ok(Box::<NoopEventSink>::default())
         }
     }
 }
@@ -94,7 +94,7 @@ async fn run(mut sink: Box<dyn EventSink>, terminal: &mut Terminal<CrosstermBack
             break;
         }
         let events = scanner.scan().await?;
-        sink.save(&events)?;
+        sink.save(&events).await?;
         state.discover(&events);
         previous_snapshot = current_snapshot;
     }

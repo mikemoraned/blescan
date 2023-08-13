@@ -1,6 +1,6 @@
 [package]
 name = "blescan"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -19,3 +19,5 @@ humantime = "2.1.0"
 serde = { version = "1.0.183", features = ["derive"] }
 serde_json = "1.0.104"
 clap = { version = "4.3.21", features = ["derive"] }
+sqlx = { version = "0.7.1", features = [ "runtime-tokio", "tls-rustls", "sqlite", "chrono", "migrate" ] }
+async-trait = "0.1.73"

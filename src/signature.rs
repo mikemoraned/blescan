@@ -57,7 +57,7 @@ impl Signature {
                 context.consume(arbitrary_data);
             }
             let digest = context.compute();
-            Some(Signature::Anonymous(format!("{:x}", digest)))
+            Some(Signature::Anonymous(format!("{digest:x}")))
         }
         else {
             None
