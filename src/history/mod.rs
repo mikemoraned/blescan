@@ -4,6 +4,7 @@ pub mod jsonl;
 use std::{path::{Path, PathBuf}, error::Error, io::BufWriter, fs::OpenOptions, ffi::OsStr, sync::Arc};
 
 use async_trait::async_trait;
+use gzp::Compression;
 use sqlx::sqlite::SqlitePoolOptions;
 
 use crate::{discover::DiscoveryEvent, history::sqllite::SQLLiteEventSink};
@@ -11,8 +12,10 @@ use crate::{discover::DiscoveryEvent, history::sqllite::SQLLiteEventSink};
 use self::jsonl::JsonLinesEventSink;
 
 #[derive(PartialEq, Debug)]
+#[allow(non_camel_case_types)]
 pub enum EventSinkFormat {
     JSONL(PathBuf),
+    JSONL_GZIP(PathBuf),
     SQLITE(PathBuf)
 }
 
@@ -23,6 +26,14 @@ impl EventSinkFormat {
         let path = path_arg.as_ref().clone();
         if Some(OsStr::new("jsonl")) == path.extension() {
             Ok(EventSinkFormat::JSONL(path.to_path_buf()))
+        }
+        else if Some(OsStr::new("gz")) == path.extension() {
+            if Some(OsStr::new("jsonl")) == Path::new(path.file_stem().unwrap()).extension() {
+                Ok(EventSinkFormat::JSONL_GZIP(path.to_path_buf()))
+            }
+            else {
+                Err(format!("unknown type: {}", path.display()).into())
+            }
         }
         else if Some(OsStr::new("sqlite")) == path.extension() {
             Ok(EventSinkFormat::SQLITE(path.to_path_buf()))
@@ -41,7 +52,20 @@ impl EventSinkFormat {
                     .append(true)
                     .open(path_buf)?;
                 let buf_writer = BufWriter::new(file);
-                Ok(Box::new(JsonLinesEventSink::create_from_writer(buf_writer)))
+                Ok(Box::new(JsonLinesEventSink::create_from_writer(Box::new(buf_writer))))
+            },
+            JSONL_GZIP(path_buf) => {
+                use gzp::{deflate::Gzip, ZBuilder};
+                
+                let file = OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(path_buf)?;
+                let buf_writer = BufWriter::new(file);
+                let compressed_writer = ZBuilder::<Gzip, _>::new()
+                    .compression_level(Compression::best())
+                    .from_writer(buf_writer);
+                Ok(Box::new(JsonLinesEventSink::create_from_writer(Box::new(compressed_writer))))
             },
             SQLITE(path_buf) => {
                 let url = format!("sqlite://{}?mode=rwc", path_buf.display());
@@ -56,6 +80,7 @@ impl EventSinkFormat {
 #[async_trait]
 pub trait EventSink : Send {
     async fn save(&mut self, events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>>;
+    async fn close(mut self: Box<Self>) -> Result<(), Box<dyn Error>>;
 }
 
 #[cfg(test)]
@@ -67,6 +92,13 @@ mod test {
         let valid = "foop.jsonl";
 
         assert_eq!(EventSinkFormat::create_from_file(valid).unwrap(), EventSinkFormat::JSONL(valid.into()));        
+    }
+
+    #[test]
+    fn jsonl_gzip_format_matching() {
+        let valid = "foop.jsonl.gz";
+
+        assert_eq!(EventSinkFormat::create_from_file(valid).unwrap(), EventSinkFormat::JSONL_GZIP(valid.into()));        
     }
 
     #[test]

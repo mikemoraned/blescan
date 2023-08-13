@@ -1,18 +1,30 @@
 use std::{error::Error, io::Write};
 
 use async_trait::async_trait;
+use gzp::ZWriter;
 
 use crate::discover::DiscoveryEvent;
 
 use super::EventSink;
 pub struct JsonLinesEventSink<'a> {
-    writer: Box<dyn std::io::Write + 'a>
+    writer: Writer<'a>
+}
+
+pub enum Writer<'a> {
+    PLAIN(Box<dyn Write + 'a>),
+    COMPRESSED(Box<dyn ZWriter + 'a>)
 }
 
 impl<'a> JsonLinesEventSink<'a> {
-    pub fn create_from_writer(writer: impl Write + 'a) -> JsonLinesEventSink<'a> {
+    pub fn create_from_writer(writer: Box<dyn Write + 'a>) -> JsonLinesEventSink<'a> {
         JsonLinesEventSink {
-            writer: Box::new(writer)
+            writer: Writer::PLAIN(writer)
+        }
+    }
+
+    pub fn create_from_zwriter(writer: Box<dyn ZWriter + 'a>) -> JsonLinesEventSink<'a> {
+        JsonLinesEventSink {
+            writer: Writer::COMPRESSED(writer)
         }
     }
 }
@@ -22,12 +34,33 @@ unsafe impl<'a> Send for JsonLinesEventSink<'a> {}
 #[async_trait]
 impl<'a> EventSink for JsonLinesEventSink<'a> {
     async fn save(&mut self, events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
-        for event in events {
-            serde_json::to_writer(&mut self.writer, event)?;
-            writeln!(&mut self.writer)?;
+        let writer = &mut self.writer;
+        match writer {
+            Writer::PLAIN(ref mut w) => {
+                for event in events {
+                    serde_json::to_writer(&mut *w, event)?;
+                    writeln!(w)?;
+                }
+                w.flush()?;
+            },
+            Writer::COMPRESSED(ref mut w) => {
+                for event in events {
+                    serde_json::to_writer(&mut *w, event)?;
+                    writeln!(w)?;
+                }
+                w.flush()?;
+            },
         }
-        self.writer.flush()?;
         Ok(())
+    }
+    async fn close(mut self: Box<Self>) -> Result<(), Box<dyn Error>> {
+        match self.writer {
+            Writer::PLAIN(_) => Ok(()),
+            Writer::COMPRESSED(ref mut w) => {
+                w.flush()?;
+                Ok(w.finish()?)
+            }
+        }
     }
 }
 
@@ -55,7 +88,7 @@ mod test {
         ];
         let mut buf = Cursor::new(Vec::new());
         {
-            let mut sink = JsonLinesEventSink::create_from_writer(&mut buf);
+            let mut sink = JsonLinesEventSink::create_from_writer(Box::new(&mut buf));
             sink.save(&events).await.unwrap();
         }
 
