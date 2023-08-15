@@ -25,7 +25,7 @@ impl SQLLiteEventSink {
 unsafe impl Send for SQLLiteEventSink {}
 
 #[async_trait]
-impl<'a> EventSink for SQLLiteEventSink {
+impl EventSink for SQLLiteEventSink {
     async fn save(&mut self, events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
         let p = self.pool.clone();
         let mut tx = p.begin().await?;
@@ -41,6 +41,10 @@ impl<'a> EventSink for SQLLiteEventSink {
                 .await?;
         }
         tx.commit().await?;
+        Ok(())
+    }
+    async fn close(mut self: Box<Self>) -> Result<(), Box<dyn Error>> {
+        self.pool.close().await;
         Ok(())
     }
 }

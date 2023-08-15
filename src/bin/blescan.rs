@@ -31,8 +31,9 @@ struct Args {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     let mut terminal = setup_terminal().context("setup failed")?;
-    let sink: Box<dyn EventSink> = sink(&args).await?;
-    run(sink, &mut terminal).await?;
+    let mut sink: Box<dyn EventSink> = sink(&args).await?;
+    run(&mut sink, &mut terminal).await?;
+    sink.close().await?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
 }
@@ -64,7 +65,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
     terminal.show_cursor().context("unable to show cursor")
 }
 
-async fn run(mut sink: Box<dyn EventSink>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
+async fn run(sink: &mut Box<dyn EventSink>, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
     use humantime::format_duration;
     use blescan::chrono_extra::Truncate;
 
