@@ -17,9 +17,7 @@ impl Ord for Signature {
 
 impl PartialOrd for Signature {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-         let self_s = self.normalised_string();
-         let other_s = other.normalised_string();
-         self_s.partial_cmp(&other_s)
+        Some(self.cmp(other))
     }
 }
 
