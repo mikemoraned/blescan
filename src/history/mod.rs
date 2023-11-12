@@ -23,7 +23,7 @@ impl EventSinkFormat {
     pub fn create_from_file<P>(path_arg: P) -> Result<EventSinkFormat, Box<dyn Error>> 
         where P: AsRef<Path>
     {
-        let path = path_arg.as_ref().clone();
+        let path = path_arg.as_ref();
         if Some(OsStr::new("jsonl")) == path.extension() {
             Ok(EventSinkFormat::JSONL(path.to_path_buf()))
         }
