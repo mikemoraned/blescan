@@ -164,10 +164,9 @@ fn rssi_summary(comparison: &Comparison) -> String {
 } 
 
 fn table<'a>(rows: Vec<Row<'a>>, title: &'a str) -> Table<'a> {
-    Table::new(rows)
+    Table::new(rows, &[Constraint::Length(32), Constraint::Length(4), Constraint::Length(4), Constraint::Length(6)])
         .style(Style::default().fg(Color::Black))
         .block(Block::default().title(title).borders(Borders::ALL))
-        .widths(&[Constraint::Length(32), Constraint::Length(4), Constraint::Length(4), Constraint::Length(6)])
         .header(
             Row::new(vec!["\nName", "Last\nSeen", "\nRssi", "\nChange"])
                 .height(2)
@@ -175,7 +174,7 @@ fn table<'a>(rows: Vec<Row<'a>>, title: &'a str) -> Table<'a> {
         )
 }
 
-fn layout(frame: &mut Frame<'_, CrosstermBackend<Stdout>>) -> (Rc<[Rect]>, Rc<[Rect]>) {
+fn layout(frame: &mut Frame) -> (Rc<[Rect]>, Rc<[Rect]>) {
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -185,7 +184,7 @@ fn layout(frame: &mut Frame<'_, CrosstermBackend<Stdout>>) -> (Rc<[Rect]>, Rc<[R
                 Constraint::Percentage(90)
             ].as_ref()
         )
-        .split(frame.size());
+        .split(frame.area());
     let snapshot_layout = Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
