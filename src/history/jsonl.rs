@@ -36,14 +36,14 @@ impl<'a> EventSink for JsonLinesEventSink<'a> {
     async fn save(&mut self, events: &[DiscoveryEvent]) -> Result<(), Box<dyn Error>> {
         let writer = &mut self.writer;
         match writer {
-            Writer::PLAIN(ref mut w) => {
+            Writer::PLAIN(w) => {
                 for event in events {
                     serde_json::to_writer(&mut *w, event)?;
                     writeln!(w)?;
                 }
                 w.flush()?;
             },
-            Writer::COMPRESSED(ref mut w) => {
+            Writer::COMPRESSED(w) => {
                 for event in events {
                     serde_json::to_writer(&mut *w, event)?;
                     writeln!(w)?;
