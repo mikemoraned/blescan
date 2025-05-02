@@ -10,6 +10,12 @@ There are other projects that look nicer, but I was interested in what I could p
 
 ## How to use
 
+### Prerequisites
+
+You'll need `cmake` installed; on Mac you can do this via `brew install cmake`
+
+### Running
+
 I've only used it on a Mac, so it may not work as follows on other platforms. The underlying libraries it uses should work on other platforms, so it should compile and run. However, _I have not tested those other platforms_.
 
 It's fairly simple to use:
