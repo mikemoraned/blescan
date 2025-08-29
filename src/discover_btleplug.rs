@@ -1,30 +1,27 @@
+use chrono::Utc;
 use std::error::Error;
 use std::time::Duration;
-use chrono::Utc;
 use tokio::time;
 
 use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter};
-use btleplug::platform::{Manager, Adapter};
+use btleplug::platform::{Adapter, Manager};
 
 use crate::discover::DiscoveryEvent;
 use crate::signature::Signature;
 
 pub struct Scanner {
-    adapter: Adapter
+    adapter: Adapter,
 }
 
 impl Scanner {
     pub async fn new() -> Result<Scanner, Box<dyn Error>> {
-        
         let manager = Manager::new().await?;
         let mut adapter_list = manager.adapters().await?;
         if adapter_list.is_empty() {
             eprintln!("No Bluetooth adapters found");
         }
         let adapter = adapter_list.pop().unwrap();
-        Ok(Scanner {
-            adapter
-        })
+        Ok(Scanner { adapter })
     }
 
     pub async fn scan(&mut self) -> Result<Vec<DiscoveryEvent>, Box<dyn Error>> {
@@ -38,15 +35,13 @@ impl Scanner {
         let current_time = Utc::now();
         for peripheral in &peripherals {
             let properties = peripheral.properties().await?.unwrap();
-            if let Some(signature) = Signature::find(&properties) {
-                if let Some(rssi) = properties.rssi {
-                    events.push(DiscoveryEvent::new(current_time, signature, rssi));
-                }
+            if let Some(signature) = Signature::find(&properties)
+                && let Some(rssi) = properties.rssi
+            {
+                events.push(DiscoveryEvent::new(current_time, signature, rssi));
             }
         }
-        self.adapter
-            .stop_scan().await
-            .expect("Can't stop scan");
+        self.adapter.stop_scan().await.expect("Can't stop scan");
         Ok(events)
     }
 }
