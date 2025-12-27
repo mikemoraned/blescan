@@ -6,8 +6,8 @@ use tokio::time;
 use btleplug::api::{Central, Manager as _, Peripheral, ScanFilter};
 use btleplug::platform::{Adapter, Manager};
 
-use crate::discover::DiscoveryEvent;
-use crate::signature::Signature;
+use blescan_domain::discover::DiscoveryEvent;
+use crate::signature_finder::find_signature;
 
 pub struct Scanner {
     adapter: Adapter,
@@ -35,7 +35,7 @@ impl Scanner {
         let current_time = Utc::now();
         for peripheral in &peripherals {
             let properties = peripheral.properties().await?.unwrap();
-            if let Some(signature) = Signature::find(&properties)
+            if let Some(signature) = find_signature(&properties)
                 && let Some(rssi) = properties.rssi
             {
                 events.push(DiscoveryEvent::new(current_time, signature, rssi));

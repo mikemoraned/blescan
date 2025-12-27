@@ -7,9 +7,9 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan::{
-    discover_btleplug::Scanner,
-    history::{EventSink, noop::NoopEventSink},
+use blescan_discovery::discover_btleplug::Scanner;
+use blescan_sinks::history::{EventSink, noop::NoopEventSink};
+use blescan_domain::{
     signature::Signature,
     snapshot::{Comparison, RssiComparison, Snapshot},
     state::State,
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn sink(args: &Args) -> Result<Box<dyn EventSink>, Box<dyn Error>> {
-    use blescan::history::sqllite::SQLLiteEventSink;
+    use blescan_sinks::history::sqllite::SQLLiteEventSink;
 
     match &args.db {
         Some(name) => {
@@ -80,7 +80,7 @@ async fn run(
     sink: &mut Box<dyn EventSink>,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
 ) -> Result<(), Box<dyn Error>> {
-    use blescan::chrono_extra::Truncate;
+    use blescan_domain::chrono_extra::Truncate;
     use humantime::format_duration;
 
     let mut scanner = Scanner::new().await?;
@@ -162,7 +162,7 @@ fn snapshot_to_table_rows<'a>(
 }
 
 fn age_summary(comparison: &Comparison) -> FormattedDuration {
-    use blescan::chrono_extra::Truncate;
+    use blescan_domain::chrono_extra::Truncate;
     use humantime::format_duration;
 
     format_duration(

@@ -1,22 +1,21 @@
 [package]
-name = "blescan"
+name = "blescan-tui"
 version = "0.6.0"
 edition = "2024"
 
+[[bin]]
+name = "blescan"
+path = "src/main.rs"
+
 [dependencies]
-btleplug = { workspace = true }
+blescan-domain = { path = "../blescan-domain" }
+blescan-sinks = { path = "../blescan-sinks" }
+blescan-discovery = { path = "../blescan-discovery" }
 tokio = { workspace = true }
 pretty_env_logger = { workspace = true }
-futures = { workspace = true }
-md5 = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 humantime = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
 clap = { workspace = true }
-sqlx = { workspace = true }
-async-trait = { workspace = true }
-gzp = { workspace = true }
