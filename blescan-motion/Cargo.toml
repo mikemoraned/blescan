@@ -1,0 +1,18 @@
+[package]
+name = "blescan-motion"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "motion"
+path = "src/motion.rs"
+
+[dependencies]
+blescan-domain = { path = "../blescan-domain" }
+objc2 = "0.5"
+objc2-core-motion = { version = "0.2", features = [
+    "CMMotionManager",
+    "CMAccelerometer",
+    "CMLogItem",
+] }
+

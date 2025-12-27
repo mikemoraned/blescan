@@ -1,5 +1,5 @@
 [workspace]
-members = ["blescan-domain", "blescan-sinks", "blescan-discovery", "blescan-tui"]
+members = ["blescan-domain", "blescan-sinks", "blescan-discovery", "blescan-tui","blescan-motion"]
 resolver = "3"
 
 [workspace.dependencies]

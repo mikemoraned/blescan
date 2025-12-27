@@ -2,6 +2,7 @@
 name = "blescan-tui"
 version = "0.6.0"
 edition = "2024"
+default-run = "blescan"
 
 [[bin]]
 name = "blescan"
