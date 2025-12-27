@@ -50,11 +50,11 @@ To see all options, do:
 
 To record all discovery events to a database, do:
 
-    cargo run -- --record file.sqlite
+    cargo run -- --db file.sqlite
 
 This will save all discovery events (what signatures are seen, when, and with what rssi) to a new file to an SQLite DB. If the file doesn't already exist,
 this will create the DB file with the correct table schema.
 
 If you want to create a new file with current timestamp you can, for example, do:
 
-    cargo run -- --record data/recordings/`date +%s`.sqlite
+    cargo run -- --db data/recordings/`date +%s`.sqlite
