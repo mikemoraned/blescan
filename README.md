@@ -48,22 +48,13 @@ To see all options, do:
 
 ### Output options
 
-To record all discovery events to a file, do:
+To record all discovery events to a database, do:
 
-    cargo run -- --record prefix.suffix
+    cargo run -- --record file.sqlite
 
-This will save all discovery events (what signatures are seen, when, and with what rssi) to a new file.
+This will save all discovery events (what signatures are seen, when, and with what rssi) to a new file to an SQLite DB. If the file doesn't already exist,
+this will create the DB file with the correct table schema.
 
-The file `prefix` can be anything you want but `suffix` must end be one of the following.
+If you want to create a new file with current timestamp you can, for example, do:
 
-#### `.jsonl`
-
-Save in [jsonl format](https://jsonlines.org).
-
-#### `.jsonl.gz`
-
-Same as `.jsonl` except output is gzip-compressed.
-
-#### `.sqlite`
-
-Saves events to an SQLite DB. If the file doesn't already exist, this will create the DB file with the correct table schema.
+    cargo run -- --record data/recordings/`date +%s`.sqlite
