@@ -9,7 +9,7 @@ use std::{
 use anyhow::{Context, Result};
 use blescan::{
     discover_btleplug::Scanner,
-    history::{EventSink, EventSinkFormat, noop::NoopEventSink},
+    history::{EventSink, noop::NoopEventSink},
     signature::Signature,
     snapshot::{Comparison, RssiComparison, Snapshot},
     state::State,
@@ -34,9 +34,9 @@ use ratatui::{
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// path to record discovery events to (format inferred from suffix)
+    /// path to SQLite db file to record events to
     #[arg(short, long)]
-    record: Option<String>,
+    db: Option<String>,
 }
 
 #[tokio::main]
@@ -51,11 +51,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn sink(args: &Args) -> Result<Box<dyn EventSink>, Box<dyn Error>> {
-    match &args.record {
+    use blescan::history::sqllite::SQLLiteEventSink;
+
+    match &args.db {
         Some(name) => {
             let path = Path::new(&name);
-            let sink_format = EventSinkFormat::create_from_file(path)?;
-            Ok(sink_format.to_sink().await?)
+            SQLLiteEventSink::create_from_file(path).await
         }
         None => Ok(Box::<NoopEventSink>::default()),
     }
