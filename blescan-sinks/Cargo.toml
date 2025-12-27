@@ -1,0 +1,13 @@
+[package]
+name = "blescan-sinks"
+version = "0.6.0"
+edition = "2024"
+
+[dependencies]
+blescan-domain = { path = "../blescan-domain" }
+sqlx = { workspace = true }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+chrono = { workspace = true }

@@ -1,0 +1,8 @@
+[package]
+name = "blescan-domain"
+version = "0.6.0"
+edition = "2024"
+
+[dependencies]
+chrono = { workspace = true }
+serde = { workspace = true }

@@ -2,7 +2,7 @@ use std::error::Error;
 
 use async_trait::async_trait;
 
-use crate::discover::DiscoveryEvent;
+use blescan_domain::discover::DiscoveryEvent;
 
 use super::EventSink;
 

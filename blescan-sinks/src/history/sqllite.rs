@@ -1,6 +1,6 @@
 use std::{error::Error, path::Path, sync::Arc};
 
-use crate::discover::DiscoveryEvent;
+use blescan_domain::discover::DiscoveryEvent;
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite, sqlite::SqlitePoolOptions};
 
@@ -68,7 +68,8 @@ mod test {
         sqlite::{SqlitePoolOptions, SqliteRow},
     };
 
-    use crate::{discover::DiscoveryEvent, history::EventSink, signature::Signature};
+    use blescan_domain::{discover::DiscoveryEvent, signature::Signature};
+    use crate::history::EventSink;
 
     use super::SQLLiteEventSink;
 
