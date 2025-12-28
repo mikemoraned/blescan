@@ -24,7 +24,7 @@ impl SQLLiteEventSink {
     pub async fn create_from_pool(
         pool: Arc<Pool<Sqlite>>,
     ) -> Result<SQLLiteEventSink, Box<dyn Error>> {
-        sqlx::migrate!("../migrations").run(&*pool.clone()).await?;
+        sqlx::migrate!("./migrations").run(&*pool.clone()).await?;
         Ok(SQLLiteEventSink { pool: pool.clone() })
     }
 }
