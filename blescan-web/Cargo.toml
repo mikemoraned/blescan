@@ -1,0 +1,16 @@
+[package]
+name = "blescan-web"
+version = "0.6.0"
+edition = "2024"
+
+[[bin]]
+name = "blescan-web"
+path = "src/main.rs"
+
+[dependencies]
+blescan-domain = { path = "../blescan-domain" }
+blescan-sinks = { path = "../blescan-sinks" }
+blescan-discovery = { path = "../blescan-discovery" }
+tokio = { workspace = true }
+pretty_env_logger = { workspace = true }
+clap = { workspace = true }
