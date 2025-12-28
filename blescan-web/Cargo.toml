@@ -11,6 +11,13 @@ path = "src/main.rs"
 blescan-domain = { path = "../blescan-domain" }
 blescan-sinks = { path = "../blescan-sinks" }
 blescan-discovery = { path = "../blescan-discovery" }
+
+axum = { workspace = true }
+axum-typed-websockets = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ts-rs = { workspace = true }
 tokio = { workspace = true }
 pretty_env_logger = { workspace = true }
 clap = { workspace = true }
