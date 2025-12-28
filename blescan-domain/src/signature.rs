@@ -1,9 +1,10 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Hash, Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(TS, Hash, Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum Signature {
     Named(String),
-    Anonymous(String)
+    Anonymous(String),
 }
 
 impl Ord for Signature {
@@ -25,7 +26,7 @@ impl Signature {
         use Signature::{Anonymous, Named};
         match self {
             Named(n) => format!("Named:{n}"),
-            Anonymous(d) => format!("Anonymous:{d}")
+            Anonymous(d) => format!("Anonymous:{d}"),
         }
     }
 }

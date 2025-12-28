@@ -1,8 +1,10 @@
 use chrono::{DateTime, Utc};
+use serde::Serialize;
+use ts_rs::TS;
 
-use crate::{signature::Signature, discover::DiscoveryEvent};
+use crate::{discover::DiscoveryEvent, signature::Signature};
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Serialize, TS, PartialEq, Debug, Clone)]
 pub struct DeviceState {
     pub date_time: DateTime<Utc>,
     pub signature: Signature,
@@ -10,15 +12,21 @@ pub struct DeviceState {
 }
 
 impl DeviceState {
-    #[must_use] pub fn new(date_time: DateTime<Utc>, signature: Signature, rssi: i16) -> DeviceState {
-        DeviceState { date_time, signature, rssi }
+    #[must_use]
+    pub fn new(date_time: DateTime<Utc>, signature: Signature, rssi: i16) -> DeviceState {
+        DeviceState {
+            date_time,
+            signature,
+            rssi,
+        }
     }
 
-    #[must_use] pub fn from_event(event: &DiscoveryEvent) -> DeviceState {
+    #[must_use]
+    pub fn from_event(event: &DiscoveryEvent) -> DeviceState {
         DeviceState {
             date_time: event.date_time,
-            signature: event.signature.clone(), 
-            rssi: event.rssi
+            signature: event.signature.clone(),
+            rssi: event.rssi,
         }
     }
 
