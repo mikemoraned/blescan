@@ -9,10 +9,5 @@ path = "src/motion.rs"
 
 [dependencies]
 blescan-domain = { path = "../blescan-domain" }
-objc2 = "0.5"
-objc2-core-motion = { version = "0.2", features = [
-    "CMMotionManager",
-    "CMAccelerometer",
-    "CMLogItem",
-] }
+coremotion-rs = "0.0.2"
 

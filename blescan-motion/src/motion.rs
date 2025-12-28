@@ -1,19 +1,20 @@
-use objc2_core_motion::CMMotionManager;
+use coremotion_rs::{CMMotionManager, ICMAccelerometerData, ICMMotionManager, INSObject};
 
 fn main() {
-    let frequency = 1.0;
-    let motion_manager = unsafe { CMMotionManager::new() };
+    let manager = CMMotionManager::alloc();
     unsafe {
-        motion_manager.setAccelerometerUpdateInterval(1.0 / frequency);
-        motion_manager.startAccelerometerUpdates();
-    }
-    unsafe {
-        loop {
-            if let Some(accelerometer_data) = motion_manager.accelerometerData() {
-                let acceleration = accelerometer_data.acceleration();
-                println!("x: {}, y: {}, z: {}", acceleration.x, acceleration.y, acceleration.z);
-
-            };
+        manager.init();
+        let available = manager.isAccelerometerAvailable();
+        println!("Accelerometer {available}");
+        if available {
+            manager.setAccelerometerUpdateInterval_(1.0/60.0); //60Hz
+            manager.startAccelerometerUpdates();
+            for i in 1..1000 {
+                let data = manager.accelerometerData();
+                let acceleration = data.acceleration();
+                println!("Sample {i} - {acceleration:?}");
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
         }
     }
 }
