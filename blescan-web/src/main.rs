@@ -29,9 +29,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Main loop: read-only access to state, prints snapshots
     loop {
-        let state = state.read().await;
-        let current_snapshot = state.snapshot();
-        drop(state); // Release the lock before printing
+        let current_snapshot = {
+            let state = state.read().await;
+            state.snapshot()
+        };
         println!("Snapshot: {}", current_snapshot);
 
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
