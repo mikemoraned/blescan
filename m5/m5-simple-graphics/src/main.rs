@@ -65,7 +65,7 @@ fn main() {
         .display_size(135, 240)
         .display_offset(52, 40)  // M5StickC Plus2 specific offsets
         .reset_pin(rst_pin)
-        .color_order(ColorOrder::Bgr)
+        .color_order(ColorOrder::Bgr)  // Display uses BGR color order
         .init(&mut Delay::new_default())
         .unwrap();
 
@@ -75,13 +75,17 @@ fn main() {
     display.clear(Rgb565::BLACK).unwrap();
 
     // Draw red rectangle covering entire screen using explicit coordinates
+    // Create red manually: full red (31), no green (0), no blue (0)
+    let red_color = Rgb565::new(31, 0, 0);
     let red_rect = Rectangle::new(
         Point::new(0, 0),
         Size::new(135, 240)
     );
-    red_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
+    red_rect.into_styled(PrimitiveStyle::with_fill(red_color))
         .draw(&mut display)
         .unwrap();
+
+    log::info!("Red color: R={}, G={}, B={}", 31, 0, 0);
 
     log::info!("Red background drawn");
 
@@ -89,17 +93,17 @@ fn main() {
     let width = 135;
     let height = 240;
 
-    // Calculate center and radius
+    // Calculate center and diameter
     let center_x = width / 2;
     let center_y = height / 2;
-    let radius = (width.min(height) / 2) as u32;
+    let diameter = width.min(height);  // Circle::with_center takes DIAMETER, not radius!
 
-    log::info!("Drawing circle at ({}, {}) with radius {}", center_x, center_y, radius);
+    log::info!("Drawing circle at ({}, {}) with diameter {}", center_x, center_y, diameter);
 
     // Draw circle in the middle of the screen
     let circle = Circle::with_center(
         Point::new(center_x as i32, center_y as i32),
-        radius
+        diameter
     );
 
     circle.into_styled(PrimitiveStyle::with_stroke(Rgb565::WHITE, 2))
