@@ -25,6 +25,10 @@ experimental = ["esp-idf-svc/experimental"]
 [dependencies]
 log = "0.4"
 esp-idf-svc = "0.51"
+embedded-graphics = "0.8"
+display-interface = "0.5"
+display-interface-spi = "0.5"
+mipidsi = "0.8"
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }
