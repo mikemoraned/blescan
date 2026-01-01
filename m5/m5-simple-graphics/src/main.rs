@@ -8,10 +8,10 @@ use std::time::Duration;
 
 use embedded_graphics::prelude::*;
 use embedded_graphics::pixelcolor::Rgb565;
-use embedded_graphics::primitives::{Circle, PrimitiveStyle};
+use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle};
 use display_interface_spi::SPIInterface;
 use mipidsi::Builder;
-use mipidsi::options::{ColorOrder, Orientation, Rotation};
+use mipidsi::options::ColorOrder;
 
 fn main() {
     // It is necessary to call this function once. Otherwise, some patches to the runtime
@@ -60,24 +60,34 @@ fn main() {
     let di = SPIInterface::new(spi_device, dc_pin);
 
     // Initialize ST7789 display using mipidsi
+    // M5StickC Plus2 has a 135x240 display
     let mut display = Builder::new(mipidsi::models::ST7789, di)
         .display_size(135, 240)
+        .display_offset(52, 40)  // M5StickC Plus2 specific offsets
         .reset_pin(rst_pin)
-        .color_order(ColorOrder::Rgb)
+        .color_order(ColorOrder::Bgr)
         .init(&mut Delay::new_default())
         .unwrap();
-
-    // Set orientation to landscape (90 degree rotation)
-    display.set_orientation(Orientation::new().rotate(Rotation::Deg90)).unwrap();
 
     log::info!("Display initialized");
 
     // Clear display to black
     display.clear(Rgb565::BLACK).unwrap();
 
-    // Get display dimensions (in landscape: 240x135)
-    let width = 240;
-    let height = 135;
+    // Draw red rectangle covering entire screen using explicit coordinates
+    let red_rect = Rectangle::new(
+        Point::new(0, 0),
+        Size::new(135, 240)
+    );
+    red_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
+        .draw(&mut display)
+        .unwrap();
+
+    log::info!("Red background drawn");
+
+    // Get display dimensions (portrait: 135 wide x 240 tall)
+    let width = 135;
+    let height = 240;
 
     // Calculate center and radius
     let center_x = width / 2;
