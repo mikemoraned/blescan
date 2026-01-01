@@ -9,6 +9,7 @@
 
 use esp_hal::{
     clock::CpuClock,
+    gpio::{Level, Output, OutputConfig},
     main,
     time::{Duration, Instant},
 };
@@ -31,10 +32,21 @@ esp_bootloader_esp_idf::esp_app_desc!();
 fn main() -> ! {
     esp_println::logger::init_logger_from_env();
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    let _peripherals = esp_hal::init(config);
+    let peripherals = esp_hal::init(config);
+    let mut backlight = Output::new(peripherals.GPIO27, Level::Low, OutputConfig::default());
 
+    let mut toggle = true;
     loop {
         info!("Hello world!");
+        if toggle {
+            info!("Backlight on");
+            backlight.set_high();
+        }
+        else {
+            info!("Backlight off");
+            backlight.set_low();
+        }
+        toggle = !toggle;
         let delay_start = Instant::now();
         while delay_start.elapsed() < Duration::from_millis(500) {}
     }
