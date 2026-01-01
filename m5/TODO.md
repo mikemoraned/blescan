@@ -27,4 +27,5 @@
     esp-generate
     ```
         * note: need to remove the `.git` folder it generates
+* [ ] get something showing on display itself
 * [ ] ...
