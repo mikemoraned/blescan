@@ -16,6 +16,7 @@ use esp_idf_hal::task::block_on;
 use esp_idf_svc::log::EspLogger;
 use esp_idf_sys as _;
 use log::{info, warn};
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -40,22 +41,25 @@ const SCAN_RESULTS_UUID: &str = "12345678-1234-5678-1234-56789abcdef1";
 /// Represents a discovered BLE device
 #[derive(Clone, Debug)]
 struct DiscoveredDevice {
+    /// Internal unique identifier (not exposed in JSON)
+    id: String,
     /// Device name (if available)
     name: String,
-    /// BLE MAC address as string
-    address: String,
     /// Received Signal Strength Indicator in dBm
     rssi: i32,
+    /// Manufacturer data (company ID -> data bytes)
+    manufacturer_data: BTreeMap<u16, Vec<u8>>,
     /// When this device was last seen
     last_seen: Instant,
 }
 
 impl DiscoveredDevice {
-    fn new(name: String, address: String, rssi: i32) -> Self {
+    fn new(id: String, name: String, rssi: i32, manufacturer_data: BTreeMap<u16, Vec<u8>>) -> Self {
         Self {
+            id,
             name,
-            address,
             rssi,
+            manufacturer_data,
             last_seen: Instant::now(),
         }
     }
@@ -66,16 +70,31 @@ impl DiscoveredDevice {
     }
 
     /// Serialize to a compact JSON-like format for BLE transmission
-    /// Format: {"n":"name","a":"addr","r":-50,"t":2}
+    /// Format: {"n":"name","r":-50,"t":2,"m":{"65535":"0102"}}
     fn to_json(&self) -> String {
         // Use short keys to minimize payload size
-        // n = name, a = address, r = rssi, t = time since last seen (seconds)
+        // n = name, r = rssi, t = time since last seen (seconds), m = manufacturer data
+        let mfg_json = if !self.manufacturer_data.is_empty() {
+            let mfg_entries: Vec<String> = self.manufacturer_data
+                .iter()
+                .map(|(id, data)| {
+                    let hex_data = data.iter()
+                        .map(|b| format!("{:02x}", b))
+                        .collect::<String>();
+                    format!(r#""{}":"{}""#, id, hex_data)
+                })
+                .collect();
+            format!(r#","m":{{{}}}"#, mfg_entries.join(","))
+        } else {
+            String::new()
+        };
+
         format!(
-            r#"{{"n":"{}","a":"{}","r":{},"t":{}}}"#,
+            r#"{{"n":"{}","r":{},"t":{}{}}}"#,
             self.name.chars().take(20).collect::<String>(), // Truncate long names
-            self.address,
             self.rssi,
-            self.age_secs()
+            self.age_secs(),
+            mfg_json
         )
     }
 }
@@ -96,11 +115,12 @@ impl DeviceTracker {
     }
 
     /// Update or add a device to the tracker
-    fn update(&mut self, name: String, address: String, rssi: i32) {
-        // Look for existing device by address
-        if let Some(device) = self.devices.iter_mut().find(|d| d.address == address) {
+    fn update(&mut self, id: String, name: String, rssi: i32, manufacturer_data: BTreeMap<u16, Vec<u8>>) {
+        // Look for existing device by id
+        if let Some(device) = self.devices.iter_mut().find(|d| d.id == id) {
             device.rssi = rssi;
             device.last_seen = Instant::now();
+            device.manufacturer_data = manufacturer_data;
             // Update name if we now have a better one
             if !name.is_empty() && device.name.is_empty() {
                 device.name = name;
@@ -119,7 +139,7 @@ impl DeviceTracker {
                     self.devices.remove(oldest_idx);
                 }
             }
-            self.devices.push(DiscoveredDevice::new(name, address, rssi));
+            self.devices.push(DiscoveredDevice::new(id, name, rssi, manufacturer_data));
         }
         self.sequence = self.sequence.wrapping_add(1);
     }
@@ -270,11 +290,17 @@ async fn run_ble_scanner_server(tracker: Arc<Mutex<DeviceTracker>>) {
         match ble_scan
             .start(&ble_device, SCAN_DURATION_MS as i32, |device, data| {
                 let name = data.name().map(|n| n.to_string()).unwrap_or_default();
-                let address = format!("{}", device.addr());
+                let id = format!("{}", device.addr());
                 let rssi = device.rssi() as i32;
 
+                // Extract manufacturer data
+                let mut manufacturer_data = BTreeMap::new();
+                if let Some(mfg) = data.manufacture_data() {
+                    manufacturer_data.insert(mfg.company_identifier, mfg.payload.to_vec());
+                }
+
                 if let Ok(mut t) = tracker_for_scan.lock() {
-                    t.update(name, address, rssi);
+                    t.update(id, name, rssi, manufacturer_data);
                 }
                 None::<()>
             })
