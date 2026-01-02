@@ -4,7 +4,7 @@ use esp_idf_svc::hal::spi::{SpiDriver, SpiDeviceDriver, SpiConfig, config::Drive
 use esp_idf_svc::hal::delay::Delay;
 use esp_idf_svc::hal::units::Hertz;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use embedded_graphics::prelude::*;
 use embedded_graphics::pixelcolor::Rgb565;
@@ -87,23 +87,50 @@ fn main() {
     let height = 240;
     let center_x = width / 2;
     let center_y = height / 2;
-    let diameter = width.min(height);  // Circle diameter equals minimum dimension
 
-    log::info!("Drawing circle at ({}, {}) with diameter {}", center_x, center_y, diameter);
+    // Calculate max diameter as the diagonal of the display
+    let max_diameter = ((width * width + height * height) as f32).sqrt() as u32;
 
-    // Draw white circle with radius equal to minimum of width/height
-    let circle = Circle::with_center(
-        Point::new(center_x as i32, center_y as i32),
-        diameter
-    );
-    circle.into_styled(PrimitiveStyle::with_stroke(Rgb565::WHITE, 2))
-        .draw(&mut display)
-        .unwrap();
+    log::info!("Display dimensions: {}x{}, max diameter: {}", width, height, max_diameter);
 
-    log::info!("Circle drawn");
+    // Animation parameters
+    let cycle_duration_ms = 5000; // 5 seconds for a full cycle (max to 0 and back)
+    let frame_delay_ms = 16; // ~60 FPS
+    let start_time = Instant::now();
 
-    // Keep the display on
+    // Animation loop
     loop {
-        thread::sleep(Duration::from_secs(1));
+        let elapsed_ms = start_time.elapsed().as_millis() as u32;
+        let position_in_cycle = (elapsed_ms % cycle_duration_ms) as f32 / cycle_duration_ms as f32;
+
+        // Create a triangle wave: 0->1->0 over the cycle
+        // First half (0.0 to 0.5): go from 1.0 to 0.0
+        // Second half (0.5 to 1.0): go from 0.0 to 1.0
+        let triangle_wave = if position_in_cycle < 0.5 {
+            1.0 - (position_in_cycle * 2.0)
+        } else {
+            (position_in_cycle - 0.5) * 2.0
+        };
+
+        let current_diameter = (max_diameter as f32 * triangle_wave) as u32;
+
+        // Redraw red background
+        let red_rect = Rectangle::new(Point::new(0, 0), Size::new(135, 240));
+        red_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
+            .draw(&mut display)
+            .unwrap();
+
+        // Draw white circle with current diameter
+        if current_diameter > 0 {
+            let circle = Circle::with_center(
+                Point::new(center_x as i32, center_y as i32),
+                current_diameter
+            );
+            circle.into_styled(PrimitiveStyle::with_stroke(Rgb565::WHITE, 2))
+                .draw(&mut display)
+                .unwrap();
+        }
+
+        thread::sleep(Duration::from_millis(frame_delay_ms as u64));
     }
 }
