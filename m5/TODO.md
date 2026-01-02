@@ -27,7 +27,7 @@
     esp-generate
     ```
         * note: need to remove the `.git` folder it generates
-* [ ] above seems to be using the lower-level `no_std` approach, so trying a higher-level template
+* [x] above seems to be using the lower-level `no_std` approach, so trying a higher-level template
     * https://github.com/esp-rs/esp-idf-template?tab=readme-ov-file#prerequisites
     ```
     cargo install cargo-generate
@@ -38,5 +38,5 @@
     ```
     cargo generate esp-rs/esp-idf-template cargo
     ```
-* [ ] get something showing on display itself
+* [x] get something showing on display itself
 * [ ] ...
