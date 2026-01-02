@@ -13,6 +13,18 @@ use display_interface_spi::SPIInterface;
 use mipidsi::Builder;
 use mipidsi::options::{ColorOrder, ColorInversion};
 
+// M5StickC Plus2 display constants
+const DISPLAY_WIDTH: u32 = 135;
+const DISPLAY_HEIGHT: u32 = 240;
+const DISPLAY_OFFSET_X: u16 = 52;
+const DISPLAY_OFFSET_Y: u16 = 40;
+const SPI_BAUDRATE: u32 = 26_000_000;
+
+// Animation constants
+const CYCLE_DURATION_MS: u32 = 2500;
+const FRAME_DELAY_MS: u64 = 50;
+const CIRCLE_STROKE_WIDTH: u32 = 2;
+
 fn main() {
     // It is necessary to call this function once. Otherwise, some patches to the runtime
     // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
@@ -50,7 +62,7 @@ fn main() {
     // Initialize SPI
     let driver = SpiDriver::new(spi, sclk, mosi, None::<esp_idf_svc::hal::gpio::AnyIOPin>, &DriverConfig::new()).unwrap();
 
-    let config = SpiConfig::new().baudrate(Hertz(26_000_000));
+    let config = SpiConfig::new().baudrate(Hertz(SPI_BAUDRATE));
     let spi_device = SpiDeviceDriver::new(driver, Some(cs), &config).unwrap();
 
     let dc_pin = PinDriver::output(dc).unwrap();
@@ -62,10 +74,10 @@ fn main() {
     // Initialize ST7789 display using mipidsi
     // M5StickC Plus2 requires both RGB order and color inversion
     let mut display = Builder::new(mipidsi::models::ST7789, di)
-        .display_size(135, 240)
-        .display_offset(52, 40)  // M5StickC Plus2 specific offsets
-        .color_order(ColorOrder::Rgb)  // RGB order (not BGR!)
-        .invert_colors(ColorInversion::Inverted)  // Colors must be inverted
+        .display_size(DISPLAY_WIDTH as u16, DISPLAY_HEIGHT as u16)
+        .display_offset(DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y)
+        .color_order(ColorOrder::Rgb)
+        .invert_colors(ColorInversion::Inverted)
         .reset_pin(rst_pin)
         .init(&mut Delay::new_default())
         .unwrap();
@@ -75,41 +87,32 @@ fn main() {
     // Clear display to black
     display.clear(Rgb565::BLACK).unwrap();
 
-    // Draw red background rectangle
-    let red_rect = Rectangle::new(Point::new(0, 0), Size::new(135, 240));
-    red_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
+    // Calculate display parameters
+    let center_x = DISPLAY_WIDTH / 2;
+    let center_y = DISPLAY_HEIGHT / 2;
+    let max_diameter = ((DISPLAY_WIDTH * DISPLAY_WIDTH + DISPLAY_HEIGHT * DISPLAY_HEIGHT) as f32).sqrt() as u32;
+    let display_rect = Rectangle::new(Point::new(0, 0), Size::new(DISPLAY_WIDTH, DISPLAY_HEIGHT));
+
+    log::info!("Display dimensions: {}x{}, max diameter: {}", DISPLAY_WIDTH, DISPLAY_HEIGHT, max_diameter);
+
+    // Draw initial red background
+    display_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
         .draw(&mut display)
         .unwrap();
     log::info!("Red background drawn");
 
-    // Get display dimensions (portrait: 135 wide x 240 tall)
-    let width = 135;
-    let height = 240;
-    let center_x = width / 2;
-    let center_y = height / 2;
-
-    // Calculate max diameter as the diagonal of the display
-    let max_diameter = ((width * width + height * height) as f32).sqrt() as u32;
-
-    log::info!("Display dimensions: {}x{}, max diameter: {}", width, height, max_diameter);
-
-    // Animation parameters
-    let cycle_duration_ms = 2500;
-    let frame_delay_ms = 50; // Slower frame rate to avoid watchdog timeout
     let start_time = Instant::now();
 
     // Animation loop
     loop {
         let elapsed_ms = start_time.elapsed().as_millis() as u32;
-        let position_in_cycle = (elapsed_ms % cycle_duration_ms) as f32 / cycle_duration_ms as f32;
+        let position_in_cycle = (elapsed_ms % CYCLE_DURATION_MS) as f32 / CYCLE_DURATION_MS as f32;
 
         // Linear decrease from max to 0 over the cycle
-        // t=0: diameter=max, t=0.5: diameter=max/2, t→1: diameter→0, t=1: jump to max
         let current_diameter = (max_diameter as f32 * (1.0 - position_in_cycle)) as u32;
 
         // Redraw red background
-        let red_rect = Rectangle::new(Point::new(0, 0), Size::new(135, 240));
-        red_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
+        display_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
             .draw(&mut display)
             .unwrap();
 
@@ -119,12 +122,11 @@ fn main() {
                 Point::new(center_x as i32, center_y as i32),
                 current_diameter
             );
-            circle.into_styled(PrimitiveStyle::with_stroke(Rgb565::WHITE, 2))
+            circle.into_styled(PrimitiveStyle::with_stroke(Rgb565::WHITE, CIRCLE_STROKE_WIDTH))
                 .draw(&mut display)
                 .unwrap();
         }
 
-        // Yield to other tasks to prevent watchdog timeout
-        thread::sleep(Duration::from_millis(frame_delay_ms as u64));
+        thread::sleep(Duration::from_millis(FRAME_DELAY_MS));
     }
 }
