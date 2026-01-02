@@ -39,7 +39,7 @@
     cargo generate esp-rs/esp-idf-template cargo
     ```
 * [x] get something showing on display itself
-* [ ] get the device scanning for bluetooth devices in a main loop and then having the data be collected
-    * [ ] device advertising itself over BLE
-    * [ ] device repeatedly scanning
+* [x] get the device scanning for bluetooth devices in a main loop and then having the data be (available to be) collected
+    * [x] device advertising itself over BLE
+    * [x] device repeatedly scanning
 * [ ] ...

@@ -1,7 +1,7 @@
 [workspace]
 members = ["blescan-domain", "blescan-sinks", "blescan-discovery", "blescan-tui"]
 resolver = "3"
-exclude = ["m5/m5-minimal","m5/m5-display-image","m5/m5-simple-graphics","m5/m5-ble-hello"]
+exclude = ["m5/m5-minimal","m5/m5-display-image","m5/m5-simple-graphics","m5/m5-ble-hello","m5/m5-ble-scan-collector"]
 
 [workspace.dependencies]
 btleplug = "0.11"
