@@ -75,44 +75,32 @@ fn main() {
     // Clear display to black
     display.clear(Rgb565::BLACK).unwrap();
 
-    // Color test pattern: Draw multiple colors to understand the mapping
-
-    // 1. Red background rectangle
+    // Draw red background rectangle
     let red_rect = Rectangle::new(Point::new(0, 0), Size::new(135, 240));
     red_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
         .draw(&mut display)
         .unwrap();
-    log::info!("Drew RED background (should show as red)");
+    log::info!("Red background drawn");
 
-    // Get display dimensions
+    // Get display dimensions (portrait: 135 wide x 240 tall)
     let width = 135;
     let height = 240;
     let center_x = width / 2;
     let center_y = height / 2;
-    let diameter = width.min(height);
+    let diameter = width.min(height);  // Circle diameter equals minimum dimension
 
-    // 2. Blue filled circle (full width/height)
-    let blue_circle = Circle::with_center(
+    log::info!("Drawing circle at ({}, {}) with diameter {}", center_x, center_y, diameter);
+
+    // Draw white circle with radius equal to minimum of width/height
+    let circle = Circle::with_center(
         Point::new(center_x as i32, center_y as i32),
         diameter
     );
-    blue_circle.into_styled(PrimitiveStyle::with_fill(Rgb565::BLUE))
+    circle.into_styled(PrimitiveStyle::with_stroke(Rgb565::WHITE, 2))
         .draw(&mut display)
         .unwrap();
-    log::info!("Drew BLUE filled circle at ({}, {}) diameter {} (should show as blue)",
-               center_x, center_y, diameter);
 
-    // 3. Green filled circle (half diameter, on top)
-    let green_diameter = diameter / 2;
-    let green_circle = Circle::with_center(
-        Point::new(center_x as i32, center_y as i32),
-        green_diameter
-    );
-    green_circle.into_styled(PrimitiveStyle::with_fill(Rgb565::GREEN))
-        .draw(&mut display)
-        .unwrap();
-    log::info!("Drew GREEN filled circle at ({}, {}) diameter {} (should show as green)",
-               center_x, center_y, green_diameter);
+    log::info!("Circle drawn");
 
     // Keep the display on
     loop {
