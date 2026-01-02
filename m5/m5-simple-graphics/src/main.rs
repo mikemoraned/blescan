@@ -23,7 +23,7 @@ const SPI_BAUDRATE: u32 = 26_000_000;
 // Animation constants
 const CYCLE_DURATION_MS: u32 = 2500;
 const FRAME_DELAY_MS: u64 = 50;
-const CIRCLE_STROKE_WIDTH: u32 = 2;
+const CIRCLE_STROKE_WIDTH: u32 = 4;
 
 fn main() {
     // It is necessary to call this function once. Otherwise, some patches to the runtime
@@ -95,11 +95,11 @@ fn main() {
 
     log::info!("Display dimensions: {}x{}, max diameter: {}", DISPLAY_WIDTH, DISPLAY_HEIGHT, max_diameter);
 
-    // Draw initial red background
-    display_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
+    // Draw initial background
+    display_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::BLUE))
         .draw(&mut display)
         .unwrap();
-    log::info!("Red background drawn");
+    log::info!("initial draw");
 
     let start_time = Instant::now();
 
@@ -111,12 +111,12 @@ fn main() {
         // Linear decrease from max to 0 over the cycle
         let current_diameter = (max_diameter as f32 * (1.0 - position_in_cycle)) as u32;
 
-        // Redraw red background
-        display_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
+        // Draw background
+        display_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::GREEN))
             .draw(&mut display)
             .unwrap();
 
-        // Draw white circle with current diameter
+        // Draw circle with current diameter
         if current_diameter > 0 {
             let circle = Circle::with_center(
                 Point::new(center_x as i32, center_y as i32),
