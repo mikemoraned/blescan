@@ -95,7 +95,7 @@ fn main() {
 
     // Animation parameters
     let cycle_duration_ms = 2500;
-    let frame_delay_ms = 8;
+    let frame_delay_ms = 50; // Slower frame rate to avoid watchdog timeout
     let start_time = Instant::now();
 
     // Animation loop
@@ -124,6 +124,7 @@ fn main() {
                 .unwrap();
         }
 
+        // Yield to other tasks to prevent watchdog timeout
         thread::sleep(Duration::from_millis(frame_delay_ms as u64));
     }
 }
