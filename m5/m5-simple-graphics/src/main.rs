@@ -7,11 +7,11 @@ use std::thread;
 use std::time::Duration;
 
 use embedded_graphics::prelude::*;
-use embedded_graphics::pixelcolor::Bgr565;
+use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle};
 use display_interface_spi::SPIInterface;
 use mipidsi::Builder;
-use mipidsi::options::ColorOrder;
+use mipidsi::options::{ColorOrder, ColorInversion};
 
 fn main() {
     // It is necessary to call this function once. Otherwise, some patches to the runtime
@@ -59,61 +59,60 @@ fn main() {
     // Create display interface
     let di = SPIInterface::new(spi_device, dc_pin);
 
-    // Initialize ST7789 display using mipidsi with BGR color
-    // M5StickC Plus2 has a 135x240 display
+    // Initialize ST7789 display using mipidsi
+    // M5StickC Plus2 requires both RGB order and color inversion
     let mut display = Builder::new(mipidsi::models::ST7789, di)
         .display_size(135, 240)
         .display_offset(52, 40)  // M5StickC Plus2 specific offsets
-        .color_order(ColorOrder::Bgr)
+        .color_order(ColorOrder::Rgb)  // RGB order (not BGR!)
+        .invert_colors(ColorInversion::Inverted)  // Colors must be inverted
         .reset_pin(rst_pin)
         .init(&mut Delay::new_default())
         .unwrap();
 
-    // Convert to use Bgr565
-    let mut display = display.color_converted::< Bgr565>();
-
     log::info!("Display initialized");
 
     // Clear display to black
-    display.clear(Bgr565::BLACK).unwrap();
+    display.clear(Rgb565::BLACK).unwrap();
 
-    // Draw red rectangle covering entire screen using explicit coordinates
-    // Using Bgr565 color type
-    let red_color = Bgr565::new(0, 0, 31);  // BGR: blue=0, green=0, red=31
-    let red_rect = Rectangle::new(
-        Point::new(0, 0),
-        Size::new(135, 240)
-    );
-    red_rect.into_styled(PrimitiveStyle::with_fill(red_color))
+    // Color test pattern: Draw multiple colors to understand the mapping
+
+    // 1. Red background rectangle
+    let red_rect = Rectangle::new(Point::new(0, 0), Size::new(135, 240));
+    red_rect.into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
         .draw(&mut display)
         .unwrap();
+    log::info!("Drew RED background (should show as red)");
 
-    log::info!("Red color specified as: R={}, G={}, B={} (BGR swapped)", 0, 0, 31);
-
-    log::info!("Red background drawn");
-
-    // Get display dimensions (portrait: 135 wide x 240 tall)
+    // Get display dimensions
     let width = 135;
     let height = 240;
-
-    // Calculate center and diameter
     let center_x = width / 2;
     let center_y = height / 2;
-    let diameter = width.min(height);  // Circle::with_center takes DIAMETER, not radius!
+    let diameter = width.min(height);
 
-    log::info!("Drawing circle at ({}, {}) with diameter {}", center_x, center_y, diameter);
-
-    // Draw circle in the middle of the screen
-    let circle = Circle::with_center(
+    // 2. Blue filled circle (full width/height)
+    let blue_circle = Circle::with_center(
         Point::new(center_x as i32, center_y as i32),
         diameter
     );
-
-    circle.into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 2))
+    blue_circle.into_styled(PrimitiveStyle::with_fill(Rgb565::BLUE))
         .draw(&mut display)
         .unwrap();
+    log::info!("Drew BLUE filled circle at ({}, {}) diameter {} (should show as blue)",
+               center_x, center_y, diameter);
 
-    log::info!("Circle drawn");
+    // 3. Green filled circle (half diameter, on top)
+    let green_diameter = diameter / 2;
+    let green_circle = Circle::with_center(
+        Point::new(center_x as i32, center_y as i32),
+        green_diameter
+    );
+    green_circle.into_styled(PrimitiveStyle::with_fill(Rgb565::GREEN))
+        .draw(&mut display)
+        .unwrap();
+    log::info!("Drew GREEN filled circle at ({}, {}) diameter {} (should show as green)",
+               center_x, center_y, green_diameter);
 
     // Keep the display on
     loop {
