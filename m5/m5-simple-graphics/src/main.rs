@@ -7,7 +7,7 @@ use std::thread;
 use std::time::Duration;
 
 use embedded_graphics::prelude::*;
-use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::pixelcolor::Bgr565;
 use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle};
 use display_interface_spi::SPIInterface;
 use mipidsi::Builder;
@@ -59,24 +59,27 @@ fn main() {
     // Create display interface
     let di = SPIInterface::new(spi_device, dc_pin);
 
-    // Initialize ST7789 display using mipidsi
+    // Initialize ST7789 display using mipidsi with BGR color
     // M5StickC Plus2 has a 135x240 display
     let mut display = Builder::new(mipidsi::models::ST7789, di)
         .display_size(135, 240)
         .display_offset(52, 40)  // M5StickC Plus2 specific offsets
+        .color_order(ColorOrder::Bgr)
         .reset_pin(rst_pin)
-        .color_order(ColorOrder::Bgr)  // Display uses BGR color order
         .init(&mut Delay::new_default())
         .unwrap();
+
+    // Convert to use Bgr565
+    let mut display = display.color_converted::< Bgr565>();
 
     log::info!("Display initialized");
 
     // Clear display to black
-    display.clear(Rgb565::BLACK).unwrap();
+    display.clear(Bgr565::BLACK).unwrap();
 
     // Draw red rectangle covering entire screen using explicit coordinates
-    // Create red manually: full red (31), no green (0), no blue (0)
-    let red_color = Rgb565::new(31, 0, 0);
+    // Using Bgr565 color type
+    let red_color = Bgr565::new(0, 0, 31);  // BGR: blue=0, green=0, red=31
     let red_rect = Rectangle::new(
         Point::new(0, 0),
         Size::new(135, 240)
@@ -85,7 +88,7 @@ fn main() {
         .draw(&mut display)
         .unwrap();
 
-    log::info!("Red color: R={}, G={}, B={}", 31, 0, 0);
+    log::info!("Red color specified as: R={}, G={}, B={} (BGR swapped)", 0, 0, 31);
 
     log::info!("Red background drawn");
 
@@ -106,7 +109,7 @@ fn main() {
         diameter
     );
 
-    circle.into_styled(PrimitiveStyle::with_stroke(Rgb565::WHITE, 2))
+    circle.into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 2))
         .draw(&mut display)
         .unwrap();
 
