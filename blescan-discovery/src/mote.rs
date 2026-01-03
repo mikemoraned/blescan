@@ -5,9 +5,10 @@ use tokio::time;
 
 use btleplug::api::{Central, Manager as _, Peripheral as BtlePeripheral, ScanFilter};
 use btleplug::platform::{Adapter, Manager};
+use uuid::Uuid;
 
 use blescan_domain::discover::DiscoveryEvent;
-use blescan_domain::peripheral::Peripheral;
+use blescan_mote::device_tracker::DiscoveredDevice;
 
 use crate::Scanner;
 use async_trait::async_trait;
@@ -31,13 +32,99 @@ impl MoteScanner {
 #[async_trait]
 impl Scanner for MoteScanner {
     async fn scan(&mut self) -> Result<Vec<DiscoveryEvent>, Box<dyn Error>> {
-        let events = vec![];
-        // TODO:
-        // 1. Find all first Motes (BLE devices) which have the MOTE_SERVICE_UUID Service *and* have the MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID Characteristic
-        // 2. For each, parse the JSON into a `DiscoveredDevice`
-        // 3. Collect all `Signature` into a `DiscoveryEvent`
-        // For each call of `scan` these events should have the same `date_time` which is time the scan was called
-        // Any errors should lead to the device being skipped and it's data ignored
+        let mut events = vec![];
+        let scan_time = Utc::now();
+
+        // Parse the UUIDs we're looking for
+        let service_uuid = Uuid::parse_str(blescan_mote::MOTE_SERVICE_UUID)?;
+        let characteristic_uuid = Uuid::parse_str(blescan_mote::MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID)?;
+
+        // Start scanning for BLE devices
+        self.adapter
+            .start_scan(ScanFilter::default())
+            .await
+            .expect("Can't scan BLE adapter for devices");
+        time::sleep(Duration::from_secs(1)).await;
+
+        // Get all peripherals found during scan
+        let peripherals = self.adapter.peripherals().await?;
+
+        for peripheral in peripherals {
+            // Connect to the peripheral to access its services and characteristics
+            if let Err(e) = peripheral.connect().await {
+                eprintln!("Failed to connect to peripheral: {}, skipping", e);
+                continue;
+            }
+
+            // Discover services and characteristics
+            if let Err(e) = peripheral.discover_services().await {
+                eprintln!("Failed to discover services: {}, skipping device", e);
+                let _ = peripheral.disconnect().await;
+                continue;
+            }
+
+            // Check if this device has the MOTE_SERVICE_UUID service
+            let has_service = peripheral.services().iter().any(|s| s.uuid == service_uuid);
+            if !has_service {
+                let _ = peripheral.disconnect().await;
+                continue;
+            }
+
+            // Find the MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID characteristic
+            let characteristics = peripheral.characteristics();
+            let characteristic = characteristics
+                .iter()
+                .find(|c| c.uuid == characteristic_uuid);
+
+            if let Some(characteristic) = characteristic {
+                // Read the characteristic value
+                match peripheral.read(characteristic).await {
+                    Ok(data) => {
+                        // Parse JSON into list of DiscoveredDevices
+                        match String::from_utf8(data) {
+                            Ok(json_str) => {
+                                match serde_json::from_str::<serde_json::Value>(&json_str) {
+                                    Ok(json_value) => {
+                                        // Extract devices array from JSON response
+                                        if let Some(devices) = json_value.get("devices").and_then(|d| d.as_array()) {
+                                            // Convert each DiscoveredDevice to a DiscoveryEvent
+                                            for device_value in devices {
+                                                match serde_json::from_value::<DiscoveredDevice>(device_value.clone()) {
+                                                    Ok(discovered_device) => {
+                                                        events.push(DiscoveryEvent::new(
+                                                            scan_time,
+                                                            discovered_device.signature,
+                                                            discovered_device.rssi as i16,
+                                                        ));
+                                                    }
+                                                    Err(e) => {
+                                                        eprintln!("Failed to parse DiscoveredDevice: {}, skipping", e);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Failed to parse JSON: {}, skipping device", e);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to convert characteristic data to UTF-8: {}, skipping device", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to read characteristic: {}, skipping device", e);
+                    }
+                }
+            }
+
+            // Disconnect from the peripheral
+            let _ = peripheral.disconnect().await;
+        }
+
+        self.adapter.stop_scan().await.expect("Can't stop scan");
         Ok(events)
     }
 }

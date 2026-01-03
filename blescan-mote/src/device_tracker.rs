@@ -1,7 +1,7 @@
 //! Device tracker for managing discovered BLE devices
 
 use blescan_domain::{peripheral::Peripheral, signature::Signature};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -9,14 +9,14 @@ use std::time::{Duration, Instant};
 const MAX_DEVICES: usize = 20;
 
 /// Represents a discovered BLE device with its signature
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DiscoveredDevice {
     /// Device signature (Named or Anonymous)
     pub signature: Signature,
     /// Received Signal Strength Indicator in dBm
     pub rssi: i32,
     /// Age in seconds since last seen
-    #[serde(skip)]
+    #[serde(skip, default = "Instant::now")]
     last_seen: Instant,
 }
 
