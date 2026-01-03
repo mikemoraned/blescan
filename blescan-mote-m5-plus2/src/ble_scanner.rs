@@ -8,18 +8,26 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+/// BLE timing unit: 0.625ms per unit
+const BLE_TIME_UNIT_MS: f32 = 0.625;
+
 /// Scan duration in milliseconds for each scan cycle
 pub const SCAN_DURATION_MS: u32 = 800;
 
 /// Delay between scan cycles in milliseconds
-pub const SCAN_INTERVAL_MS: u32 = 200;
+pub const SCAN_CYCLE_DELAY_MS: u32 = 200;
 
-/// BLE scan interval in 0.625ms units (100 = 62.5ms)
-/// TODO: Consider consolidating SCAN_INTERVAL_MS and BLE_SCAN_INTERVAL_UNITS into one shared constant
-pub const BLE_SCAN_INTERVAL_UNITS: u16 = 100;
+/// BLE scan interval in milliseconds (62.5ms)
+const BLE_SCAN_INTERVAL_MS: f32 = 62.5;
 
-/// BLE scan window in 0.625ms units (50 = 31.25ms)
-pub const BLE_SCAN_WINDOW_UNITS: u16 = 50;
+/// BLE scan interval in BLE time units (0.625ms units)
+pub const BLE_SCAN_INTERVAL_UNITS: u16 = (BLE_SCAN_INTERVAL_MS / BLE_TIME_UNIT_MS) as u16;
+
+/// BLE scan window in milliseconds (31.25ms)
+const BLE_SCAN_WINDOW_MS: f32 = 31.25;
+
+/// BLE scan window in BLE time units (0.625ms units)
+pub const BLE_SCAN_WINDOW_UNITS: u16 = (BLE_SCAN_WINDOW_MS / BLE_TIME_UNIT_MS) as u16;
 
 /// Maximum age for devices before pruning (30 seconds)
 pub const MAX_DEVICE_AGE: Duration = Duration::from_secs(30);

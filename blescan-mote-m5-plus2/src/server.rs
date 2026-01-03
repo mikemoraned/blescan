@@ -178,6 +178,6 @@ pub async fn run_ble_mote_server() {
         }
 
         // Brief delay between scan cycles
-        FreeRtos::delay_ms(ble_scanner::SCAN_INTERVAL_MS);
+        FreeRtos::delay_ms(ble_scanner::SCAN_CYCLE_DELAY_MS);
     }
 }
