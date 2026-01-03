@@ -5,9 +5,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-/// Maximum number of devices to track
-const MAX_DEVICES: usize = 20;
-
 /// Represents a discovered BLE device with its signature
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DiscoveredDevice {
@@ -55,13 +52,16 @@ pub struct DeviceTracker {
     devices: HashMap<Signature, DiscoveredDevice>,
     /// Sequence number that increments on each update
     sequence: u32,
+    /// Maximum number of devices to track
+    max_devices: usize,
 }
 
 impl DeviceTracker {
-    pub fn new() -> Self {
+    pub fn new(max_devices: usize) -> Self {
         Self {
-            devices: HashMap::with_capacity(MAX_DEVICES),
+            devices: HashMap::with_capacity(max_devices),
             sequence: 0,
+            max_devices,
         }
     }
 
@@ -74,7 +74,7 @@ impl DeviceTracker {
                 device.update(rssi);
             } else {
                 // Add new device
-                if self.devices.len() >= MAX_DEVICES {
+                if self.devices.len() >= self.max_devices {
                     // Remove oldest device
                     if let Some(oldest_sig) = self
                         .devices
@@ -95,8 +95,7 @@ impl DeviceTracker {
     /// Remove devices not seen for more than the specified duration
     pub fn prune_old(&mut self, max_age: Duration) {
         let before_len = self.devices.len();
-        self.devices
-            .retain(|_, d| d.last_seen.elapsed() < max_age);
+        self.devices.retain(|_, d| d.last_seen.elapsed() < max_age);
         if self.devices.len() != before_len {
             self.sequence = self.sequence.wrapping_add(1);
         }

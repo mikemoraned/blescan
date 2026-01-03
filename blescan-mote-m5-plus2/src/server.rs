@@ -105,7 +105,7 @@ pub async fn run_ble_mote_server() {
     );
 
     // Create shared device tracker
-    let tracker = Arc::new(Mutex::new(DeviceTracker::new()));
+    let tracker = Arc::new(Mutex::new(DeviceTracker::new(20)));
 
     // Create scan instance and configure it
     let mut ble_scan = BLEScan::new();
