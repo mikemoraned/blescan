@@ -10,8 +10,7 @@ use std::sync::{Arc, Mutex};
 /// Device name for BLE advertising
 const DEVICE_NAME: &str = "blescan-mote";
 
-// const MAX_DEVICES: usize = 20;
-const MAX_DEVICES: usize = 5; // TODO: switch back once can handle more devices
+const MAX_DEVICES: usize = 20;
 
 pub async fn run_ble_mote_server() {
     info!("Initializing BLE...");
