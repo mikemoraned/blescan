@@ -2,6 +2,7 @@ use chrono::Utc;
 use std::error::Error;
 use std::time::Duration;
 use tokio::time;
+use tracing::error;
 
 use btleplug::api::{Central, Manager as _, Peripheral as BtlePeripheral, ScanFilter};
 use btleplug::platform::{Adapter, Manager};
@@ -21,7 +22,7 @@ impl LocalScanner {
         let manager = Manager::new().await?;
         let mut adapter_list = manager.adapters().await?;
         if adapter_list.is_empty() {
-            eprintln!("No Bluetooth adapters found");
+            error!("No Bluetooth adapters found");
         }
         let adapter = adapter_list.pop().unwrap();
         Ok(LocalScanner { adapter })

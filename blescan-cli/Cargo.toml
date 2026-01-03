@@ -17,3 +17,5 @@ anyhow = { workspace = true }
 chrono = { workspace = true }
 humantime = { workspace = true }
 clap = { workspace = true }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
