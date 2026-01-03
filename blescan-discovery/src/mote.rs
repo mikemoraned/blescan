@@ -113,14 +113,6 @@ impl Scanner for MoteScanner {
             }
             eprintln!("[MoteScanner] Services discovered");
 
-            // Check if this device has the MOTE_SERVICE_UUID service
-            let has_service = peripheral.services().iter().any(|s| s.uuid == service_uuid);
-            eprintln!("[MoteScanner] Has mote service: {}", has_service);
-            if !has_service {
-                let _ = peripheral.disconnect().await;
-                continue;
-            }
-
             // Add to our connected list using the peripheral ID as the key
             self.connected.insert(peripheral_id, ConnectedPeripheral { peripheral });
             eprintln!("[MoteScanner] Added peripheral to connected list");
