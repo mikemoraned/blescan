@@ -45,7 +45,9 @@ impl Scanner for MoteScanner {
         // Start scanning for BLE devices
         eprintln!("[MoteScanner] Starting BLE scan");
         self.adapter
-            .start_scan(ScanFilter::default())
+            .start_scan(ScanFilter {
+                services: vec![service_uuid],
+            })
             .await
             .expect("Can't scan BLE adapter for devices");
         time::sleep(Duration::from_secs(1)).await;
