@@ -1,0 +1,12 @@
+[package]
+name = "blescan-discovery-local"
+version = "0.6.0"
+edition = "2024"
+
+[dependencies]
+blescan-domain = { path = "../blescan-domain" }
+btleplug = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+md5 = { workspace = true }
+chrono = { workspace = true }

@@ -42,4 +42,11 @@
 * [x] get the device scanning for bluetooth devices in a main loop and then having the data be (available to be) collected
     * [x] device advertising itself over BLE
     * [x] device repeatedly scanning
-* [ ] ...
+* [ ] integrate the m5 device as an alternate backend for `blescan`
+    * [ ] create m5 `mote` crate in main workspace which:
+        * [ ] continuously scans for BLE advertisements
+        * [ ] exposes this data as a new GATT service and characteristic which surfaces data as JSON
+    * [ ] convert `discovery` crate into a place for shared definitions related to discovery e.g. the GATT Service UUID
+        * [ ] extract the `btleplug` stuff into a `discovery-local` crate
+    * [ ] add a new `discovery-motes` crate
+        * scans for motes using Service UUID and exposes via Scan interface

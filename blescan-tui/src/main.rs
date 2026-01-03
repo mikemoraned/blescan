@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan_discovery::discover_btleplug::Scanner;
+use blescan_discovery_local::discover_btleplug::Scanner;
 use blescan_sinks::history::{EventSink, noop::NoopEventSink};
 use blescan_domain::{
     signature::Signature,
