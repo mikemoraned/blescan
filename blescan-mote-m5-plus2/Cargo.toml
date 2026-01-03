@@ -29,6 +29,8 @@ esp-idf-hal = "0.45.2"
 esp-idf-sys = { version = "0.36.1", features = ["binstart"] }
 esp32-nimble = "0.11.1"
 blescan-mote = { path = "../blescan-mote" }
+blescan-domain = { path = "../blescan-domain" }
+serde_json = "1.0"
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }

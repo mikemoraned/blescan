@@ -43,10 +43,10 @@
     * [x] device advertising itself over BLE
     * [x] device repeatedly scanning
 * [ ] integrate the m5 device as an alternate backend for `blescan`
-    * [ ] create an m5 crate in main workspace which:
-        * [ ] continuously scans for BLE advertisements
-        * [ ] exposes this data as a new GATT service and characteristic which surfaces data as JSON
-    * [ ] convert a crate into a place for shared definitions related to discovery e.g. the GATT Service UUID
-        * [ ] extract the `btleplug` stuff into a `discovery-local` crate
+    * [x] create an m5 crate in main workspace which:
+        * [x] continuously scans for BLE advertisements
+        * [x] exposes this data as a new GATT service and characteristic which surfaces data as JSON
+    * [x] convert a crate into a place for shared definitions related to discovery e.g. the GATT Service UUID
+        * [x] extract the `btleplug` stuff into a local crate
     * [ ] have a crate which
         * scans for motes using Service UUID and exposes via Scan interface
