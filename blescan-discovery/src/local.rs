@@ -7,7 +7,7 @@ use btleplug::api::{Central, Manager as _, Peripheral as BtlePeripheral, ScanFil
 use btleplug::platform::{Adapter, Manager};
 
 use blescan_domain::discover::DiscoveryEvent;
-use blescan_domain::peripheral::{find_signature, Peripheral};
+use blescan_domain::peripheral::Peripheral;
 
 use crate::Scanner;
 use async_trait::async_trait;
@@ -45,7 +45,7 @@ impl Scanner for LocalScanner {
                 properties.local_name.clone(),
                 properties.manufacturer_data.clone(),
             );
-            if let Some(signature) = find_signature(&peripheral_info)
+            if let Some(signature) = peripheral_info.try_into_signature()
                 && let Some(rssi) = properties.rssi
             {
                 events.push(DiscoveryEvent::new(current_time, signature, rssi));

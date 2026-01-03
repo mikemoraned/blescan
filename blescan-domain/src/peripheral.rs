@@ -13,22 +13,22 @@ impl Peripheral {
             manufacturer_data,
         }
     }
-}
 
-pub fn find_signature(peripheral: &Peripheral) -> Option<Signature> {
-    if let Some(local_name) = &peripheral.local_name {
-        Some(Signature::Named(local_name.clone()))
-    } else if !peripheral.manufacturer_data.is_empty() {
-        let mut context = md5::Context::new();
-        let mut manufacturer_ids: Vec<&u16> = peripheral.manufacturer_data.keys().collect();
-        manufacturer_ids.sort();
-        for manufacturer_id in manufacturer_ids {
-            let arbitrary_data = peripheral.manufacturer_data[manufacturer_id].clone();
-            context.consume(arbitrary_data);
+    pub fn try_into_signature(&self) -> Option<Signature> {
+        if let Some(local_name) = &self.local_name {
+            Some(Signature::Named(local_name.clone()))
+        } else if !self.manufacturer_data.is_empty() {
+            let mut context = md5::Context::new();
+            let mut manufacturer_ids: Vec<&u16> = self.manufacturer_data.keys().collect();
+            manufacturer_ids.sort();
+            for manufacturer_id in manufacturer_ids {
+                let arbitrary_data = self.manufacturer_data[manufacturer_id].clone();
+                context.consume(arbitrary_data);
+            }
+            let digest = context.compute();
+            Some(Signature::Anonymous(format!("{digest:x}")))
+        } else {
+            None
         }
-        let digest = context.compute();
-        Some(Signature::Anonymous(format!("{digest:x}")))
-    } else {
-        None
     }
 }
