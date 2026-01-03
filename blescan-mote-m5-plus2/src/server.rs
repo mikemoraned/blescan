@@ -2,13 +2,15 @@
 
 use crate::ble_scanner;
 use blescan_mote::device_tracker::DeviceTracker;
-use esp32_nimble::{uuid128, BLEAdvertisementData, BLEDevice, BLEScan, NimbleProperties};
 use esp_idf_hal::delay::FreeRtos;
+use esp32_nimble::{BLEAdvertisementData, BLEDevice, BLEScan, NimbleProperties, uuid128};
 use log::{info, warn};
 use std::sync::{Arc, Mutex};
 
 /// Device name for BLE advertising
 const DEVICE_NAME: &str = "blescan-mote";
+
+const MAX_DEVICES: usize = 20;
 
 pub async fn run_ble_mote_server() {
     info!("Initializing BLE...");
@@ -43,9 +45,7 @@ pub async fn run_ble_mote_server() {
     );
 
     // Set initial value
-    hello_characteristic
-        .lock()
-        .set_value(b"hello world");
+    hello_characteristic.lock().set_value(b"hello world");
 
     info!("Created hello world characteristic");
 
@@ -105,7 +105,7 @@ pub async fn run_ble_mote_server() {
     );
 
     // Create shared device tracker
-    let tracker = Arc::new(Mutex::new(DeviceTracker::new(20)));
+    let tracker = Arc::new(Mutex::new(DeviceTracker::new(MAX_DEVICES)));
 
     // Create scan instance and configure it
     let mut ble_scan = BLEScan::new();
