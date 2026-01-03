@@ -25,6 +25,10 @@ experimental = ["esp-idf-svc/experimental"]
 [dependencies]
 log = "0.4"
 esp-idf-svc = "0.51"
+esp-idf-hal = "0.45.2"
+esp-idf-sys = { version = "0.36.1", features = ["binstart"] }
+esp32-nimble = "0.11.1"
+blescan-mote = { path = "../blescan-mote" }
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }

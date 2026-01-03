@@ -1,14 +1,7 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! Shared definitions for BLE Mote GATT services and characteristics
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// GATT Service UUID for the Mote service
+pub const MOTE_SERVICE_UUID: &str = "12345678-1234-5678-1234-56789abcdef0";
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+/// GATT Characteristic UUID for the hello world message
+pub const MOTE_HELLO_CHARACTERISTIC_UUID: &str = "12345678-1234-5678-1234-56789abcdef1";
