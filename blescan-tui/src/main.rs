@@ -37,6 +37,10 @@ struct Args {
     /// path to SQLite db file to record events to
     #[arg(short, long)]
     db: Option<String>,
+
+    /// scan mode: local or mote
+    #[arg(short, long, default_value = "local")]
+    mode: ScanMode,
 }
 
 #[tokio::main]
@@ -44,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     let mut terminal = setup_terminal().context("setup failed")?;
     let mut sink: Box<dyn EventSink> = sink(&args).await?;
-    run(&mut sink, &mut terminal).await?;
+    run(&mut sink, &mut terminal, args.mode).await?;
     sink.close().await?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
@@ -79,11 +83,12 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
 async fn run(
     sink: &mut Box<dyn EventSink>,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    mode: ScanMode,
 ) -> Result<(), Box<dyn Error>> {
     use blescan_domain::chrono_extra::Truncate;
     use humantime::format_duration;
 
-    let mut scanner = ScanMode::Local.create_scanner().await?;
+    let mut scanner = mode.create_scanner().await?;
     let mut state = State::default();
     let start = Utc::now();
     let mut previous_snapshot = Snapshot::default();
