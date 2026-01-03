@@ -13,11 +13,13 @@ pub enum ScanMode {
     Local,
 }
 
-pub async fn create_scanner(mode: ScanMode) -> Result<Box<dyn Scanner>, Box<dyn Error>> {
-    match mode {
-        ScanMode::Local => {
-            let local = local::LocalScanner::new().await?;
-            Ok(Box::new(local))
+impl ScanMode {
+    pub async fn create_scanner(self) -> Result<Box<dyn Scanner>, Box<dyn Error>> {
+        match self {
+            ScanMode::Local => {
+                let local = local::LocalScanner::new().await?;
+                Ok(Box::new(local))
+            }
         }
     }
 }
