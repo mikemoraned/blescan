@@ -1,30 +1,33 @@
+use blescan_discovery::Scanner;
 use chrono::Utc;
 use std::error::Error;
 use std::time::Duration;
 use tokio::time;
 
-use btleplug::api::{Central, PeripheralProperties, Manager as _, Peripheral, ScanFilter};
+use btleplug::api::{Central, Manager as _, Peripheral, PeripheralProperties, ScanFilter};
 use btleplug::platform::{Adapter, Manager};
 
 use blescan_domain::discover::DiscoveryEvent;
 use blescan_domain::signature::Signature;
 
-pub struct Scanner {
+pub struct LocalScanner {
     adapter: Adapter,
 }
 
-impl Scanner {
-    pub async fn new() -> Result<Scanner, Box<dyn Error>> {
+impl LocalScanner {
+    pub async fn new() -> Result<LocalScanner, Box<dyn Error>> {
         let manager = Manager::new().await?;
         let mut adapter_list = manager.adapters().await?;
         if adapter_list.is_empty() {
             eprintln!("No Bluetooth adapters found");
         }
         let adapter = adapter_list.pop().unwrap();
-        Ok(Scanner { adapter })
+        Ok(LocalScanner { adapter })
     }
+}
 
-    pub async fn scan(&mut self) -> Result<Vec<DiscoveryEvent>, Box<dyn Error>> {
+impl Scanner for LocalScanner {
+    async fn scan(&mut self) -> Result<Vec<DiscoveryEvent>, Box<dyn Error>> {
         self.adapter
             .start_scan(ScanFilter::default())
             .await
