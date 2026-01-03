@@ -1,3 +1,5 @@
+pub mod local;
+
 use std::error::Error;
 
 use blescan_domain::discover::DiscoveryEvent;

@@ -1,4 +1,3 @@
-use blescan_discovery::Scanner;
 use chrono::Utc;
 use std::error::Error;
 use std::time::Duration;
@@ -9,6 +8,8 @@ use btleplug::platform::{Adapter, Manager};
 
 use blescan_domain::discover::DiscoveryEvent;
 use blescan_domain::signature::Signature;
+
+use crate::Scanner;
 
 pub struct LocalScanner {
     adapter: Adapter,

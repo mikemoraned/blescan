@@ -11,7 +11,6 @@ path = "src/main.rs"
 blescan-domain = { path = "../blescan-domain" }
 blescan-sinks = { path = "../blescan-sinks" }
 blescan-discovery = { path = "../blescan-discovery" }
-blescan-discovery-local = { path = "../blescan-discovery-local" }
 tokio = { workspace = true }
 pretty_env_logger = { workspace = true }
 ratatui = { workspace = true }

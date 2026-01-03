@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use blescan_discovery::Scanner;
-use blescan_discovery_local::discover_btleplug::LocalScanner;
+use blescan_discovery::local::LocalScanner;
 use blescan_domain::{
     signature::Signature,
     snapshot::{Comparison, RssiComparison, Snapshot},
