@@ -4,9 +4,10 @@ members = [
     "blescan-domain",
     "blescan-sinks",
     "blescan-tui",
+    "blescan-mote",
 ]
 exclude = [
-    "blescan-discovery-m5-plus2",
+    "blescan-mote-m5-plus2",
     "m5/m5-minimal",
     "m5/m5-simple-graphics",
     "m5/m5-ble-hello",
