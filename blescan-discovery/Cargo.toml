@@ -10,3 +10,4 @@ tokio = { workspace = true }
 futures = { workspace = true }
 md5 = { workspace = true }
 chrono = { workspace = true }
+async-trait = { workspace = true }

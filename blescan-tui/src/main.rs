@@ -7,8 +7,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use blescan_discovery::Scanner;
-use blescan_discovery::local::LocalScanner;
+use blescan_discovery::{ScanMode, create_scanner};
 use blescan_domain::{
     signature::Signature,
     snapshot::{Comparison, RssiComparison, Snapshot},
@@ -84,7 +83,7 @@ async fn run(
     use blescan_domain::chrono_extra::Truncate;
     use humantime::format_duration;
 
-    let mut scanner = LocalScanner::new().await?;
+    let mut scanner = create_scanner(ScanMode::Local).await?;
     let mut state = State::default();
     let start = Utc::now();
     let mut previous_snapshot = Snapshot::default();

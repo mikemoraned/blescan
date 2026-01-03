@@ -10,6 +10,7 @@ use blescan_domain::discover::DiscoveryEvent;
 use blescan_domain::signature::Signature;
 
 use crate::Scanner;
+use async_trait::async_trait;
 
 pub struct LocalScanner {
     adapter: Adapter,
@@ -27,6 +28,7 @@ impl LocalScanner {
     }
 }
 
+#[async_trait]
 impl Scanner for LocalScanner {
     async fn scan(&mut self) -> Result<Vec<DiscoveryEvent>, Box<dyn Error>> {
         self.adapter
