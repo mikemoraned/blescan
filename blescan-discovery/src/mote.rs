@@ -27,16 +27,18 @@ struct Mote {
 impl Mote {
     async fn collect(
         &self,
-        scan_time: chrono::DateTime<Utc>,
-        characteristic_uuid: Uuid,
+        scan_time: chrono::DateTime<Utc>
     ) -> Result<MoteResponse, Box<dyn Error>> {
         // Check if still connected
         if !self.peripheral.is_connected().await? {
             trace!("[Mote] Disconnected");
             return Ok(MoteResponse::Disconnected);
         }
-        
+
         // Find the MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID characteristic
+        let characteristic_uuid = Uuid::parse_str(blescan_mote::MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID)?;
+        trace!("[MoteScanner] Looking for characteristic UUID: {}", characteristic_uuid);
+
         trace!("[Mote] Looking for characteristic...");
         let characteristics = self.peripheral.characteristics();
         let characteristic = characteristics
@@ -114,9 +116,7 @@ impl Scanner for MoteScanner {
 
         // Parse the UUIDs we're looking for
         let service_uuid = Uuid::parse_str(blescan_mote::MOTE_SERVICE_UUID)?;
-        let characteristic_uuid = Uuid::parse_str(blescan_mote::MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID)?;
         trace!("[MoteScanner] Looking for service UUID: {}", service_uuid);
-        trace!("[MoteScanner] Looking for characteristic UUID: {}", characteristic_uuid);
 
         // Step 2: Discover new motes via ScanFilter
         trace!("[MoteScanner] Starting BLE scan");
@@ -174,7 +174,7 @@ impl Scanner for MoteScanner {
         for (idx, (id, mote)) in self.connected.iter().enumerate() {
             trace!("[MoteScanner] Processing connected mote {}/{}", idx + 1, self.connected.len());
 
-            match mote.collect(scan_time, characteristic_uuid).await {
+            match mote.collect(scan_time).await {
                 Ok(MoteResponse::Sample(mut mote_events)) => {
                     events.append(&mut mote_events);
                 }
