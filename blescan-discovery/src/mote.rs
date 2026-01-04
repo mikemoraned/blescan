@@ -31,19 +31,11 @@ impl Mote {
         characteristic_uuid: Uuid,
     ) -> Result<MoteResponse, Box<dyn Error>> {
         // Check if still connected
-        match self.peripheral.is_connected().await {
-            Ok(true) => {
-                // Still connected, continue with collection
-            }
-            Ok(false) => {
-                trace!("[Mote] Disconnected");
-                return Ok(MoteResponse::Disconnected);
-            }
-            Err(e) => {
-                error!("[Mote] Error checking connection status: {}", e);
-                return Ok(MoteResponse::Disconnected);
-            }
+        if !self.peripheral.is_connected().await? {
+            trace!("[Mote] Disconnected");
+            return Ok(MoteResponse::Disconnected);
         }
+        
         // Find the MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID characteristic
         trace!("[Mote] Looking for characteristic...");
         let characteristics = self.peripheral.characteristics();
