@@ -5,8 +5,13 @@ edition = "2024"
 
 [dependencies]
 blescan-domain = { path = "../blescan-domain" }
+blescan-mote = { path = "../blescan-mote" }
 btleplug = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 md5 = { workspace = true }
 chrono = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+tracing = "0.1.44"

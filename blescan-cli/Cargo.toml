@@ -1,0 +1,21 @@
+[package]
+name = "blescan-cli"
+version = "0.6.0"
+edition = "2024"
+
+[[bin]]
+name = "blescan-cli"
+path = "src/main.rs"
+
+[dependencies]
+blescan-domain = { path = "../blescan-domain" }
+blescan-sinks = { path = "../blescan-sinks" }
+blescan-discovery = { path = "../blescan-discovery" }
+tokio = { workspace = true }
+pretty_env_logger = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+humantime = { workspace = true }
+clap = { workspace = true }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
