@@ -15,13 +15,13 @@ use blescan_mote::device_tracker::DiscoveredDevice;
 use crate::Scanner;
 use async_trait::async_trait;
 
-struct ConnectedPeripheral {
+struct Mote {
     peripheral: Peripheral,
 }
 
 pub struct MoteScanner {
     adapter: Adapter,
-    connected: HashMap<PeripheralId, ConnectedPeripheral>,
+    connected: HashMap<PeripheralId, Mote>,
 }
 
 impl MoteScanner {
@@ -51,7 +51,7 @@ impl Scanner for MoteScanner {
         trace!("[MoteScanner] Looking for service UUID: {}", service_uuid);
         trace!("[MoteScanner] Looking for characteristic UUID: {}", characteristic_uuid);
 
-        // Step 1: Remove disconnected peripherals from our connected list
+        // Step 1: Remove disconnected motes from our connected list
         trace!("[MoteScanner] Checking existing connections ({} total)", self.connected.len());
         let mut to_remove = Vec::new();
         for (id, conn) in &self.connected {
@@ -60,7 +60,7 @@ impl Scanner for MoteScanner {
                     // Still connected, keep it
                 }
                 Ok(false) => {
-                    trace!("[MoteScanner] Removing disconnected peripheral");
+                    trace!("[MoteScanner] Removing disconnected mote");
                     to_remove.push(id.clone());
                 }
                 Err(e) => {
@@ -72,9 +72,9 @@ impl Scanner for MoteScanner {
         for id in to_remove {
             self.connected.remove(&id);
         }
-        trace!("[MoteScanner] {} peripherals still connected", self.connected.len());
+        trace!("[MoteScanner] {} motes still connected", self.connected.len());
 
-        // Step 2: Discover new peripherals via ScanFilter
+        // Step 2: Discover new motes via ScanFilter
         trace!("[MoteScanner] Starting BLE scan");
         self.adapter
             .start_scan(ScanFilter {
@@ -84,49 +84,49 @@ impl Scanner for MoteScanner {
             .expect("Can't scan BLE adapter for devices");
         time::sleep(Duration::from_secs(1)).await;
 
-        // Get all peripherals found during scan
-        let discovered_peripherals = self.adapter.peripherals().await?;
-        trace!("[MoteScanner] Found {} peripherals during scan", discovered_peripherals.len());
+        // Get all motes found during scan
+        let discovered_motes = self.adapter.peripherals().await?;
+        trace!("[MoteScanner] Found {} motes during scan", discovered_motes.len());
 
-        // Step 3: Find peripherals we're not already connected to and add them
-        for peripheral in discovered_peripherals {
-            let peripheral_id = peripheral.id();
+        // Step 3: Find motes we're not already connected to and add them
+        for mote in discovered_motes {
+            let mote_id = mote.id();
 
-            // Check if we're already connected to this peripheral (fast HashMap lookup)
-            if self.connected.contains_key(&peripheral_id) {
-                trace!("[MoteScanner] Already connected to this peripheral, skipping");
+            // Check if we're already connected to this mote (fast HashMap lookup)
+            if self.connected.contains_key(&mote_id) {
+                trace!("[MoteScanner] Already connected to this mote, skipping");
                 continue;
             }
 
-            trace!("[MoteScanner] Connecting to new peripheral...");
-            if let Err(e) = peripheral.connect().await {
-                error!("Failed to connect to peripheral: {}, skipping", e);
+            trace!("[MoteScanner] Connecting to new mote...");
+            if let Err(e) = mote.connect().await {
+                error!("Failed to connect to mote: {}, skipping", e);
                 continue;
             }
             trace!("[MoteScanner] Connected successfully");
 
             // Discover services and characteristics
             trace!("[MoteScanner] Discovering services...");
-            if let Err(e) = peripheral.discover_services().await {
+            if let Err(e) = mote.discover_services().await {
                 error!("Failed to discover services: {}, skipping device", e);
-                let _ = peripheral.disconnect().await;
+                let _ = mote.disconnect().await;
                 continue;
             }
             trace!("[MoteScanner] Services discovered");
 
-            // Add to our connected list using the peripheral ID as the key
-            self.connected.insert(peripheral_id, ConnectedPeripheral { peripheral });
-            trace!("[MoteScanner] Added peripheral to connected list");
+            // Add to our connected list using the mote ID as the key
+            self.connected.insert(mote_id, Mote { peripheral: mote });
+            trace!("[MoteScanner] Added mote to connected list");
         }
 
         trace!("[MoteScanner] Stopping scan");
         self.adapter.stop_scan().await.expect("Can't stop scan");
-        trace!("[MoteScanner] Total connected peripherals: {}", self.connected.len());
+        trace!("[MoteScanner] Total connected motes: {}", self.connected.len());
 
-        // Step 4 & 5: For each connected peripheral, read characteristics and collect DiscoveryEvents
+        // Step 4 & 5: For each connected mote, read characteristics and collect DiscoveryEvents
         let mut events = vec![];
         for (idx, (_id, conn)) in self.connected.iter().enumerate() {
-            trace!("[MoteScanner] Processing connected peripheral {}/{}", idx + 1, self.connected.len());
+            trace!("[MoteScanner] Processing connected mote {}/{}", idx + 1, self.connected.len());
 
             // Find the MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID characteristic
             trace!("[MoteScanner] Looking for characteristic...");
