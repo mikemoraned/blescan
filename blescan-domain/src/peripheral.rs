@@ -16,9 +16,7 @@ impl Peripheral {
     }
 
     pub fn try_into_signature(&self) -> Option<Signature> {
-        if let Some(local_name) = &self.local_name {
-            Some(Signature::Named(local_name.clone()))
-        } else if !self.manufacturer_data.is_empty() {
+        if !self.manufacturer_data.is_empty() {
             // Collect and sort manufacturer data for consistent hashing
             let mut manufacturer_ids: Vec<&u16> = self.manufacturer_data.keys().collect();
             manufacturer_ids.sort();
@@ -32,9 +30,13 @@ impl Peripheral {
 
             // Hash with xxh3 and encode as base62
             let hash = xxh3_64(&data_to_hash);
-            let encoded = base62::encode(hash);
+            let id = base62::encode(hash);
 
-            Some(Signature::Anonymous(encoded))
+            if let Some(local_name) = &self.local_name {
+                Some(Signature::Named { name: local_name.clone(), id })
+            } else {
+                Some(Signature::Anonymous { id })
+            }
         } else {
             None
         }

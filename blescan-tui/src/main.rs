@@ -142,13 +142,13 @@ fn snapshot_to_table_rows<'a>(
                 Cell::from(rssi_summary(comparison)).style(default_style),
             ];
             match &state.signature {
-                Signature::Named(n) => {
-                    let name_cell = Cell::from(n.to_string()).style(default_style);
+                Signature::Named { name, .. } => {
+                    let name_cell = Cell::from(name.to_string()).style(default_style);
                     let row = Row::new([vec![name_cell], shared_cells].concat());
                     ([named, vec![row]].concat(), anon)
                 }
-                Signature::Anonymous(d) => {
-                    let name = d.clone();
+                Signature::Anonymous { id } => {
+                    let name = id.clone();
                     let style = match comparison.rssi {
                         RssiComparison::New => Style::default().fg(Color::Red),
                         _ => match u8::from_str_radix(&name[0..2], 16) {

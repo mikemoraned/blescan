@@ -89,14 +89,14 @@ fn print_scan_results(
 
     let (named_items, anon_items): (Vec<_>, Vec<_>) = compared_to_previous
         .iter()
-        .partition(|(state, _)| matches!(state.signature, Signature::Named(_)));
+        .partition(|(state, _)| matches!(state.signature, Signature::Named { .. }));
 
     if !named_items.is_empty() {
         println!("\nNamed Devices:");
         println!("{:<32} {:>6} {:>4} {:>6}", "Name", "Age", "RSSI", "Change");
         println!("{}", "-".repeat(52));
         for (state, comparison) in &named_items {
-            if let Signature::Named(name) = &state.signature {
+            if let Signature::Named { name, .. } = &state.signature {
                 println!(
                     "{:<32} {:>6} {:>4} {:>6}",
                     name,
@@ -113,10 +113,10 @@ fn print_scan_results(
         println!("{:<32} {:>6} {:>4} {:>6}", "Address", "Age", "RSSI", "Change");
         println!("{}", "-".repeat(52));
         for (state, comparison) in &anon_items {
-            if let Signature::Anonymous(addr) = &state.signature {
+            if let Signature::Anonymous { id } = &state.signature {
                 println!(
                     "{:<32} {:>6} {:>4} {:>6}",
-                    addr,
+                    id,
                     age_summary(comparison),
                     state.rssi,
                     rssi_summary(comparison)

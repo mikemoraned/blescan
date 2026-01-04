@@ -2,8 +2,8 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum Signature {
-    Named(String),
-    Anonymous(String)
+    Named { name: String, id: String },
+    Anonymous { id: String }
 }
 
 impl Ord for Signature {
@@ -24,8 +24,8 @@ impl Signature {
     fn normalised_string(&self) -> String {
         use Signature::{Anonymous, Named};
         match self {
-            Named(n) => format!("Named:{n}"),
-            Anonymous(d) => format!("Anonymous:{d}")
+            Named { name, id } => format!("Named:{id};{name}"),
+            Anonymous { id } => format!("Anonymous:{id}")
         }
     }
 }
@@ -34,8 +34,8 @@ impl std::fmt::Display for Signature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Signature::{Anonymous, Named};
         match self {
-            Named(n) => write!(f, "{n:>32}"),
-            Anonymous(d) => write!(f, "{d}"),
+            Named { name, id } => write!(f, "{id} {name:>21}"),
+            Anonymous { id } => write!(f, "{id}"),
         }
     }
 }
