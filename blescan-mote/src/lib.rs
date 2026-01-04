@@ -3,10 +3,10 @@
 pub mod device_tracker;
 
 /// GATT Service UUID for the Mote service
-pub const MOTE_SERVICE_UUID: &str = "12345678-1234-5678-1234-56789abcdef0";
+pub const MOTE_SERVICE_UUID: &str = "e595b646-b900-472f-a207-288266f05314";
 
 /// GATT Characteristic UUID for the hello world message
-pub const MOTE_HELLO_CHARACTERISTIC_UUID: &str = "12345678-1234-5678-1234-56789abcdef1";
+pub const MOTE_HELLO_CHARACTERISTIC_UUID: &str = "68b9e660-d41b-49c3-b052-017b0fd1235f";
 
 /// GATT Characteristic UUID for discovered devices list
-pub const MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID: &str = "12345678-1234-5678-1234-56789abcdef2";
+pub const MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID: &str = "7182a610-1d80-4079-8ab8-d069d88800b1";
