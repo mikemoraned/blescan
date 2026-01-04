@@ -96,19 +96,16 @@ async fn run(
         let current_snapshot = state.snapshot();
         terminal.draw(|f| {
             let now = Utc::now();
-            let (named_items, anon_items) =
-                snapshot_to_table_rows(&current_snapshot, &previous_snapshot, now);
-            let named_table = table(named_items, "Named");
-            let anon_table = table(anon_items, "Anonymous");
-            let (main_layout, snapshot_layout) = layout(f);
+            let rows = snapshot_to_table_rows(&current_snapshot, &previous_snapshot, now);
+            let devices_table = table(rows, "Devices");
+            let main_layout = layout(f);
             let runtime = format_duration((now - start).truncate_to_seconds().to_std().unwrap());
             let footer = Paragraph::new(format!(
                 "Now: {now}, Total Run time: {runtime}\n(press 'q' to quit)"
             ))
             .block(Block::default().title("Context").borders(Borders::ALL))
             .style(Style::default().fg(Color::Black));
-            f.render_widget(named_table, snapshot_layout[0]);
-            f.render_widget(anon_table, snapshot_layout[1]);
+            f.render_widget(devices_table, main_layout[1]);
             f.render_widget(footer, main_layout[0]);
         })?;
         if should_quit()? {
@@ -126,44 +123,43 @@ fn snapshot_to_table_rows<'a>(
     current: &Snapshot,
     previous: &Snapshot,
     now: DateTime<Utc>,
-) -> (Vec<Row<'a>>, Vec<Row<'a>>) {
+) -> Vec<Row<'a>> {
     let ordered = current.order_by_age_and_volume();
     let compared_to_previous = ordered.compared_to(now, previous);
-    let (named_items, anon_items) = compared_to_previous.iter().fold(
-        (Vec::new(), Vec::new()),
-        |(named, anon), (state, comparison)| {
+    compared_to_previous
+        .iter()
+        .map(|(state, comparison)| {
             let default_style = match comparison.rssi {
                 RssiComparison::New => Style::default().fg(Color::Red),
                 _ => Style::default().fg(Color::Black),
             };
-            let shared_cells = vec![
-                Cell::from(age_summary(comparison).to_string()).style(default_style),
-                Cell::from(format!("{}", state.rssi)).style(default_style),
-                Cell::from(rssi_summary(comparison)).style(default_style),
-            ];
-            match &state.signature {
-                Signature::Named { name, .. } => {
-                    let name_cell = Cell::from(name.to_string()).style(default_style);
-                    let row = Row::new([vec![name_cell], shared_cells].concat());
-                    ([named, vec![row]].concat(), anon)
+
+            let (id, name, style) = match &state.signature {
+                Signature::Named { name, id } => {
+                    (id.clone(), name.clone(), default_style)
                 }
                 Signature::Anonymous { id } => {
-                    let name = id.clone();
                     let style = match comparison.rssi {
                         RssiComparison::New => Style::default().fg(Color::Red),
-                        _ => match u8::from_str_radix(&name[0..2], 16) {
+                        _ => match u8::from_str_radix(&id[0..2], 16) {
                             Ok(index) => Style::default().fg(Color::Indexed(index)),
                             _ => Style::default().fg(Color::Black),
                         },
                     };
-                    let name_cell = Cell::from(name).style(style);
-                    let row = Row::new([vec![name_cell], shared_cells].concat()).style(style);
-                    (named, [anon, vec![row]].concat())
+                    (id.clone(), String::new(), style)
                 }
-            }
-        },
-    );
-    (named_items, anon_items)
+            };
+
+            let cells = vec![
+                Cell::from(id).style(style),
+                Cell::from(name).style(style),
+                Cell::from(age_summary(comparison).to_string()).style(style),
+                Cell::from(format!("{}", state.rssi)).style(style),
+                Cell::from(rssi_summary(comparison)).style(style),
+            ];
+            Row::new(cells).style(style)
+        })
+        .collect()
 }
 
 fn age_summary(comparison: &Comparison) -> FormattedDuration {
@@ -193,33 +189,27 @@ fn table<'a>(rows: Vec<Row<'a>>, title: &'a str) -> Table<'a> {
     Table::new(
         rows,
         &[
-            Constraint::Length(32),
-            Constraint::Length(4),
-            Constraint::Length(4),
+            Constraint::Length(12),
+            Constraint::Length(21),
+            Constraint::Length(10),
+            Constraint::Length(6),
             Constraint::Length(6),
         ],
     )
     .style(Style::default().fg(Color::Black))
     .block(Block::default().title(title).borders(Borders::ALL))
     .header(
-        Row::new(vec!["\nName", "Last\nSeen", "\nRssi", "\nChange"])
-            .height(2)
+        Row::new(vec!["Id", "Name", "Last Seen", "Rssi", "Change"])
             .style(Style::default().fg(Color::Yellow)),
     )
 }
 
-fn layout(frame: &mut Frame) -> (Rc<[Rect]>, Rc<[Rect]>) {
-    let main_layout = Layout::default()
+fn layout(frame: &mut Frame) -> Rc<[Rect]> {
+    Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([Constraint::Percentage(10), Constraint::Percentage(90)].as_ref())
-        .split(frame.area());
-    let snapshot_layout = Layout::default()
-        .direction(Direction::Horizontal)
-        .margin(1)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-        .split(main_layout[1]);
-    (main_layout, snapshot_layout)
+        .split(frame.area())
 }
 
 fn should_quit() -> Result<bool> {
