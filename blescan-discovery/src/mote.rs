@@ -19,6 +19,62 @@ struct Mote {
     peripheral: Peripheral,
 }
 
+impl Mote {
+    async fn collect(
+        &self,
+        scan_time: chrono::DateTime<Utc>,
+        characteristic_uuid: Uuid,
+    ) -> Result<Vec<DiscoveryEvent>, Box<dyn Error>> {
+        // Find the MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID characteristic
+        trace!("[Mote] Looking for characteristic...");
+        let characteristics = self.peripheral.characteristics();
+        let characteristic = characteristics
+            .iter()
+            .find(|c| c.uuid == characteristic_uuid)
+            .ok_or("Characteristic not found")?;
+
+        trace!("[Mote] Found characteristic, reading data...");
+        // Read the characteristic value
+        let data = self.peripheral.read(characteristic).await?;
+        trace!("[Mote] Read {} bytes from characteristic", data.len());
+
+        // Parse JSON into list of DiscoveredDevices
+        let json_str = String::from_utf8(data)?;
+        trace!("[Mote] Converted to UTF-8 string");
+
+        let json_value = serde_json::from_str::<serde_json::Value>(&json_str)?;
+        trace!("[Mote] JSON parsed successfully");
+
+        // Extract devices array from JSON response
+        let devices = json_value
+            .get("devices")
+            .and_then(|d| d.as_array())
+            .ok_or("No 'devices' array found in JSON")?;
+
+        trace!("[Mote] Found {} devices in JSON", devices.len());
+
+        // Convert each DiscoveredDevice to a DiscoveryEvent
+        let mut events = Vec::new();
+        for (device_idx, device_value) in devices.iter().enumerate() {
+            match serde_json::from_value::<DiscoveredDevice>(device_value.clone()) {
+                Ok(discovered_device) => {
+                    trace!("[Mote] Parsed device {}/{}", device_idx + 1, devices.len());
+                    events.push(DiscoveryEvent::new(
+                        scan_time,
+                        discovered_device.signature,
+                        discovered_device.rssi as i16,
+                    ));
+                }
+                Err(e) => {
+                    error!("Failed to parse DiscoveredDevice: {}, skipping", e);
+                }
+            }
+        }
+
+        Ok(events)
+    }
+}
+
 pub struct MoteScanner {
     adapter: Adapter,
     connected: HashMap<PeripheralId, Mote>,
@@ -125,70 +181,25 @@ impl Scanner for MoteScanner {
 
         // Step 4 & 5: For each connected mote, read characteristics and collect DiscoveryEvents
         let mut events = vec![];
-        for (idx, (_id, conn)) in self.connected.iter().enumerate() {
+        let mut failed_motes = vec![];
+
+        for (idx, (id, mote)) in self.connected.iter().enumerate() {
             trace!("[MoteScanner] Processing connected mote {}/{}", idx + 1, self.connected.len());
 
-            // Find the MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID characteristic
-            trace!("[MoteScanner] Looking for characteristic...");
-            let characteristics = conn.peripheral.characteristics();
-            let characteristic = characteristics
-                .iter()
-                .find(|c| c.uuid == characteristic_uuid);
-
-            if let Some(characteristic) = characteristic {
-                trace!("[MoteScanner] Found characteristic, reading data...");
-                // Read the characteristic value
-                match conn.peripheral.read(characteristic).await {
-                    Ok(data) => {
-                        trace!("[MoteScanner] Read {} bytes from characteristic", data.len());
-                        // Parse JSON into list of DiscoveredDevices
-                        match String::from_utf8(data) {
-                            Ok(json_str) => {
-                                trace!("[MoteScanner] Converted to UTF-8 string");
-                                match serde_json::from_str::<serde_json::Value>(&json_str) {
-                                    Ok(json_value) => {
-                                        trace!("[MoteScanner] JSON parsed successfully");
-                                        // Extract devices array from JSON response
-                                        if let Some(devices) = json_value.get("devices").and_then(|d| d.as_array()) {
-                                            trace!("[MoteScanner] Found {} devices in JSON", devices.len());
-                                            // Convert each DiscoveredDevice to a DiscoveryEvent
-                                            for (device_idx, device_value) in devices.iter().enumerate() {
-                                                match serde_json::from_value::<DiscoveredDevice>(device_value.clone()) {
-                                                    Ok(discovered_device) => {
-                                                        trace!("[MoteScanner] Parsed device {}/{}", device_idx + 1, devices.len());
-                                                        events.push(DiscoveryEvent::new(
-                                                            scan_time,
-                                                            discovered_device.signature,
-                                                            discovered_device.rssi as i16,
-                                                        ));
-                                                    }
-                                                    Err(e) => {
-                                                        error!("Failed to parse DiscoveredDevice: {}, skipping", e);
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            trace!("[MoteScanner] No 'devices' array found in JSON");
-                                        }
-                                    }
-                                    Err(e) => {
-                                        error!("Failed to parse JSON: {}, skipping device", e);
-                                        trace!("Received JSON (length: {}): {}", json_str.len(), json_str);
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                error!("Failed to convert characteristic data to UTF-8: {}, skipping device", e);
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        error!("Failed to read characteristic: {}, skipping device", e);
-                    }
+            match mote.collect(scan_time, characteristic_uuid).await {
+                Ok(mut mote_events) => {
+                    events.append(&mut mote_events);
                 }
-            } else {
-                trace!("[MoteScanner] Characteristic not found");
+                Err(e) => {
+                    error!("[MoteScanner] Failed to collect from mote: {}, removing from connected list", e);
+                    failed_motes.push(id.clone());
+                }
             }
+        }
+
+        // Remove failed motes from connected list
+        for id in failed_motes {
+            self.connected.remove(&id);
         }
 
         trace!("[MoteScanner] Scan complete, found {} events", events.len());
