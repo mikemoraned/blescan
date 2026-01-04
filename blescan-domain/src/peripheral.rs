@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use crate::signature::Signature;
-use xxhash_rust::xxh3::xxh3_64;
 
 pub struct Peripheral {
     pub local_name: Option<String>,
@@ -18,19 +17,16 @@ impl Peripheral {
     pub fn try_into_signature(&self) -> Option<Signature> {
         if !self.manufacturer_data.is_empty() {
             // Collect and sort manufacturer data for consistent hashing
+            let mut context = md5::Context::new();
             let mut manufacturer_ids: Vec<&u16> = self.manufacturer_data.keys().collect();
             manufacturer_ids.sort();
-
-            // Concatenate all manufacturer data in sorted order
-            let mut data_to_hash = Vec::new();
             for manufacturer_id in manufacturer_ids {
-                data_to_hash.extend_from_slice(&manufacturer_id.to_le_bytes());
-                data_to_hash.extend_from_slice(&self.manufacturer_data[manufacturer_id]);
+                context.consume(manufacturer_id.to_le_bytes());
+                let arbitrary_data = self.manufacturer_data[manufacturer_id].clone();
+                context.consume(arbitrary_data);
             }
-
-            // Hash with xxh3 and encode as base62
-            let hash = xxh3_64(&data_to_hash);
-            let id = base62::encode(hash);
+            let digest = context.compute();
+            let id = format!("{digest:x}")[..8].to_string();
 
             if let Some(local_name) = &self.local_name {
                 Some(Signature::Named { name: local_name.clone(), id })

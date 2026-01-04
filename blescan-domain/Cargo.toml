@@ -6,5 +6,4 @@ edition = "2024"
 [dependencies]
 chrono = { workspace = true }
 serde = { workspace = true }
-xxhash-rust = { workspace = true }
-base62 = { workspace = true }
+md5 = { workspace = true }
