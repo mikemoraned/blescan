@@ -129,25 +129,17 @@ fn snapshot_to_table_rows<'a>(
     compared_to_previous
         .iter()
         .map(|(state, comparison)| {
-            let default_style = match comparison.rssi {
-                RssiComparison::New => Style::default().fg(Color::Red),
-                _ => Style::default().fg(Color::Black),
+            let (id, name) = match &state.signature {
+                Signature::Named { name, id } => (id.clone(), name.clone()),
+                Signature::Anonymous { id } => (id.clone(), String::new()),
             };
 
-            let (id, name, style) = match &state.signature {
-                Signature::Named { name, id } => {
-                    (id.clone(), name.clone(), default_style)
-                }
-                Signature::Anonymous { id } => {
-                    let style = match comparison.rssi {
-                        RssiComparison::New => Style::default().fg(Color::Red),
-                        _ => match u8::from_str_radix(&id[0..2], 16) {
-                            Ok(index) => Style::default().fg(Color::Indexed(index)),
-                            _ => Style::default().fg(Color::Black),
-                        },
-                    };
-                    (id.clone(), String::new(), style)
-                }
+            let style = match comparison.rssi {
+                RssiComparison::New => Style::default().fg(Color::Red),
+                _ => match u8::from_str_radix(&id[0..2], 16) {
+                    Ok(index) => Style::default().fg(Color::Indexed(index)),
+                    _ => Style::default().fg(Color::Black),
+                },
             };
 
             let cells = vec![
