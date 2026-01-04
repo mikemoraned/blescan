@@ -15,6 +15,11 @@ use blescan_mote::device_tracker::DiscoveredDevice;
 use crate::Scanner;
 use async_trait::async_trait;
 
+enum MoteResponse {
+    Disconnected,
+    Sample(Vec<DiscoveryEvent>),
+}
+
 struct Mote {
     peripheral: Peripheral,
 }
@@ -24,7 +29,21 @@ impl Mote {
         &self,
         scan_time: chrono::DateTime<Utc>,
         characteristic_uuid: Uuid,
-    ) -> Result<Vec<DiscoveryEvent>, Box<dyn Error>> {
+    ) -> Result<MoteResponse, Box<dyn Error>> {
+        // Check if still connected
+        match self.peripheral.is_connected().await {
+            Ok(true) => {
+                // Still connected, continue with collection
+            }
+            Ok(false) => {
+                trace!("[Mote] Disconnected");
+                return Ok(MoteResponse::Disconnected);
+            }
+            Err(e) => {
+                error!("[Mote] Error checking connection status: {}", e);
+                return Ok(MoteResponse::Disconnected);
+            }
+        }
         // Find the MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID characteristic
         trace!("[Mote] Looking for characteristic...");
         let characteristics = self.peripheral.characteristics();
@@ -71,7 +90,7 @@ impl Mote {
             }
         }
 
-        Ok(events)
+        Ok(MoteResponse::Sample(events))
     }
 }
 
@@ -106,29 +125,6 @@ impl Scanner for MoteScanner {
         let characteristic_uuid = Uuid::parse_str(blescan_mote::MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID)?;
         trace!("[MoteScanner] Looking for service UUID: {}", service_uuid);
         trace!("[MoteScanner] Looking for characteristic UUID: {}", characteristic_uuid);
-
-        // Step 1: Remove disconnected motes from our connected list
-        trace!("[MoteScanner] Checking existing connections ({} total)", self.connected.len());
-        let mut to_remove = Vec::new();
-        for (id, conn) in &self.connected {
-            match conn.peripheral.is_connected().await {
-                Ok(true) => {
-                    // Still connected, keep it
-                }
-                Ok(false) => {
-                    trace!("[MoteScanner] Removing disconnected mote");
-                    to_remove.push(id.clone());
-                }
-                Err(e) => {
-                    error!("[MoteScanner] Error checking connection status: {}, removing", e);
-                    to_remove.push(id.clone());
-                }
-            }
-        }
-        for id in to_remove {
-            self.connected.remove(&id);
-        }
-        trace!("[MoteScanner] {} motes still connected", self.connected.len());
 
         // Step 2: Discover new motes via ScanFilter
         trace!("[MoteScanner] Starting BLE scan");
@@ -181,24 +177,28 @@ impl Scanner for MoteScanner {
 
         // Step 4 & 5: For each connected mote, read characteristics and collect DiscoveryEvents
         let mut events = vec![];
-        let mut failed_motes = vec![];
+        let mut motes_to_remove = vec![];
 
         for (idx, (id, mote)) in self.connected.iter().enumerate() {
             trace!("[MoteScanner] Processing connected mote {}/{}", idx + 1, self.connected.len());
 
             match mote.collect(scan_time, characteristic_uuid).await {
-                Ok(mut mote_events) => {
+                Ok(MoteResponse::Sample(mut mote_events)) => {
                     events.append(&mut mote_events);
+                }
+                Ok(MoteResponse::Disconnected) => {
+                    trace!("[MoteScanner] Mote disconnected, removing from connected list");
+                    motes_to_remove.push(id.clone());
                 }
                 Err(e) => {
                     error!("[MoteScanner] Failed to collect from mote: {}, removing from connected list", e);
-                    failed_motes.push(id.clone());
+                    motes_to_remove.push(id.clone());
                 }
             }
         }
 
-        // Remove failed motes from connected list
-        for id in failed_motes {
+        // Remove disconnected and failed motes from connected list
+        for id in motes_to_remove {
             self.connected.remove(&id);
         }
 
