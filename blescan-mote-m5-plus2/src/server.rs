@@ -38,17 +38,6 @@ pub async fn run_ble_mote_server() {
     // Create our custom service using the shared UUID
     let service = server.create_service(uuid128!(blescan_mote::MOTE_SERVICE_UUID));
 
-    // Create the hello world characteristic with READ and NOTIFY properties
-    let hello_characteristic = service.lock().create_characteristic(
-        uuid128!(blescan_mote::MOTE_HELLO_CHARACTERISTIC_UUID),
-        NimbleProperties::READ | NimbleProperties::NOTIFY,
-    );
-
-    // Set initial value
-    hello_characteristic.lock().set_value(b"hello world");
-
-    info!("Created hello world characteristic");
-
     // Create the discovered devices characteristic with READ and NOTIFY properties
     let devices_characteristic = service.lock().create_characteristic(
         uuid128!(blescan_mote::MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID),
@@ -96,10 +85,6 @@ pub async fn run_ble_mote_server() {
     info!("BLE Server started, advertising as '{}'", DEVICE_NAME);
     info!("Service UUID: {}", blescan_mote::MOTE_SERVICE_UUID);
     info!(
-        "Hello Characteristic UUID: {}",
-        blescan_mote::MOTE_HELLO_CHARACTERISTIC_UUID
-    );
-    info!(
         "Discovered Devices Characteristic UUID: {}",
         blescan_mote::MOTE_DISCOVERED_DEVICES_CHARACTERISTIC_UUID
     );
@@ -114,7 +99,6 @@ pub async fn run_ble_mote_server() {
     info!("Starting continuous BLE scanning...");
 
     let mut last_sequence: u32 = 0;
-    let mut hello_counter: u32 = 0;
 
     // Main loop: scan -> update characteristics -> repeat
     loop {
@@ -167,14 +151,6 @@ pub async fn run_ble_mote_server() {
                     json_data.len()
                 );
             }
-        }
-
-        // Periodically update hello world characteristic
-        hello_counter += 1;
-        if hello_counter % 5 == 0 {
-            let message = format!("hello world {}", hello_counter / 5);
-            hello_characteristic.lock().set_value(message.as_bytes());
-            hello_characteristic.lock().notify();
         }
 
         // Brief delay between scan cycles
