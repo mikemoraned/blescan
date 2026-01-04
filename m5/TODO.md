@@ -48,5 +48,7 @@
         * [x] exposes this data as a new GATT service and characteristic which surfaces data as JSON
     * [x] convert a crate into a place for shared definitions related to discovery e.g. the GATT Service UUID
         * [x] extract the `btleplug` stuff into a local crate
-    * [ ] have a crate which
-        * scans for motes using Service UUID and exposes via Scan interface
+    * [x] have a crate which scans for motes using Service UUID and exposes via Scan interface
+    * [ ] make more efficient
+        * [ ] use subscriptions+notifications for receiving data
+        * [ ] don't discover new motes every second, to devote more resources to getting data from existing motes
