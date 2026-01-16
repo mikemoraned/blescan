@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::error::Error;
 use std::time::Duration;
@@ -14,6 +14,7 @@ use blescan_mote::device_tracker::DiscoveredDevice;
 
 use crate::Scanner;
 use async_trait::async_trait;
+use serde_json::Value;
 
 enum MoteResponse {
     Disconnected,
@@ -67,6 +68,12 @@ impl Mote {
         trace!("[Mote] Found {} devices in JSON", devices.len());
 
         // Convert each DiscoveredDevice to a DiscoveryEvent
+        let events = Self::parse(scan_time, devices);
+
+        Ok(MoteResponse::Sample(events))
+    }
+
+    fn parse(scan_time: DateTime<Utc>, devices: &Vec<Value>) -> Vec<DiscoveryEvent> {
         let mut events = Vec::new();
         for (device_idx, device_value) in devices.iter().enumerate() {
             match serde_json::from_value::<DiscoveredDevice>(device_value.clone()) {
@@ -83,8 +90,7 @@ impl Mote {
                 }
             }
         }
-
-        Ok(MoteResponse::Sample(events))
+        events
     }
 }
 
