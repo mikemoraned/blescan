@@ -78,12 +78,12 @@ mod test {
         let events = &vec![
             DiscoveryEvent::new(
                 Utc.timestamp_opt(1, 0).unwrap(),
-                Signature::Named("Device 1".to_string()),
+                Signature::Named { name: "Device 1".to_string(), id: "id1".to_string() },
                 -20,
             ),
             DiscoveryEvent::new(
                 Utc.timestamp_opt(2, 0).unwrap(),
-                Signature::Anonymous("503eb25838435ebb288f3b657b9f9031".to_string()),
+                Signature::Anonymous { id: "503eb25838435ebb288f3b657b9f9031".to_string() },
                 -30,
             ),
         ];

@@ -9,13 +9,13 @@ impl std::fmt::Display for Snapshot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Named:")?;
         for state in &self.0 {
-            if let Signature::Named(_) = state.signature {
+            if let Signature::Named { .. } = state.signature {
                 writeln!(f, "{:>4}, {:>4}", state.signature, state.rssi)?;
             }
         }
         writeln!(f, "Anonymous:")?;
         for state in &self.0 {
-            if let Signature::Anonymous(_) = state.signature {
+            if let Signature::Anonymous { .. } = state.signature {
                 writeln!(f, "{:>4}, {:>4}", state.signature, state.rssi)?;
             }
         }
@@ -90,17 +90,17 @@ mod test {
 
     #[test]
     fn order_by_age_oldest_last() {
-        let initial_order = 
+        let initial_order =
             Snapshot(vec![
-                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -1),
-                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named("2".to_string()), -1),
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -1)
+                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named { name: "1".to_string(), id: "id1".to_string() }, -1),
+                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named { name: "2".to_string(), id: "id2".to_string() }, -1),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "3".to_string(), id: "id3".to_string() }, -1)
             ]);
-        let expected_order = 
+        let expected_order =
             Snapshot(vec![
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -1),
-                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named("2".to_string()), -1),
-                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -1),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "3".to_string(), id: "id3".to_string() }, -1),
+                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named { name: "2".to_string(), id: "id2".to_string() }, -1),
+                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named { name: "1".to_string(), id: "id1".to_string() }, -1),
             ]);
         let actual_order = initial_order.order_by_age_and_volume();
         assert_eq!(actual_order, expected_order);
@@ -108,17 +108,17 @@ mod test {
 
     #[test]
     fn order_by_volume_when_same_age() {
-        let initial_order = 
+        let initial_order =
             Snapshot(vec![
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("1".to_string()), -3),
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("2".to_string()), -2),
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -1)
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "1".to_string(), id: "id1".to_string() }, -3),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "2".to_string(), id: "id2".to_string() }, -2),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "3".to_string(), id: "id3".to_string() }, -1)
             ]);
-        let expected_order = 
+        let expected_order =
             Snapshot(vec![
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -1),
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("2".to_string()), -2),
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("1".to_string()), -3)
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "3".to_string(), id: "id3".to_string() }, -1),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "2".to_string(), id: "id2".to_string() }, -2),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "1".to_string(), id: "id1".to_string() }, -3)
             ]);
         let actual_order = initial_order.order_by_age_and_volume();
         fn just_rssi(v: &[DeviceState]) -> Vec<i16> {
@@ -130,29 +130,29 @@ mod test {
 
     #[test]
     fn relative_age() {
-        let snapshot = 
+        let snapshot =
             Snapshot(vec![
-                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -1),
-                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named("2".to_string()), -1),
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -1),
+                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named { name: "1".to_string(), id: "id1".to_string() }, -1),
+                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named { name: "2".to_string(), id: "id2".to_string() }, -1),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "3".to_string(), id: "id3".to_string() }, -1),
             ]);
         let now = Utc.timestamp_opt(10, 0).unwrap();
-        let expected_comparisons 
+        let expected_comparisons
             = vec![
-                (snapshot.0[0].clone(), Comparison { 
+                (snapshot.0[0].clone(), Comparison {
                     relative_age: Duration::seconds(9),
                     rssi: RssiComparison::New
                 }),
-                (snapshot.0[1].clone(), Comparison { 
+                (snapshot.0[1].clone(), Comparison {
                     relative_age: Duration::seconds(8),
-                    rssi: RssiComparison::New 
+                    rssi: RssiComparison::New
                 }),
-                (snapshot.0[2].clone(), Comparison { 
+                (snapshot.0[2].clone(), Comparison {
                     relative_age: Duration::seconds(7),
                     rssi: RssiComparison::New
                 }),
             ];
-        let actual_comparisons 
+        let actual_comparisons
             = snapshot.compared_to(now, &Snapshot::default());
         assert_eq!(actual_comparisons, expected_comparisons);
     }
@@ -162,41 +162,41 @@ mod test {
         fn just_rssi(v: &[(DeviceState, Comparison)]) -> Vec<RssiComparison> {
             v.iter().map(|(_,c)|{ c.rssi}).collect()
         }
-        
-        let previous = 
+
+        let previous =
             Snapshot(vec![
-                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -10),
-                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named("2".to_string()), -10),
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -10),
+                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named { name: "1".to_string(), id: "id1".to_string() }, -10),
+                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named { name: "2".to_string(), id: "id2".to_string() }, -10),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "3".to_string(), id: "id3".to_string() }, -10),
             ]);
         let now = Utc.timestamp_opt(10, 0).unwrap();
-        let current = 
+        let current =
             Snapshot(vec![
-                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named("1".to_string()), -5),
-                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named("2".to_string()), -15),
-                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named("3".to_string()), -10),
-                DeviceState::new(Utc.timestamp_opt(4, 0).unwrap(), Signature::Named("4".to_string()), -10),
+                DeviceState::new(Utc.timestamp_opt(1, 0).unwrap(), Signature::Named { name: "1".to_string(), id: "id1".to_string() }, -5),
+                DeviceState::new(Utc.timestamp_opt(2, 0).unwrap(), Signature::Named { name: "2".to_string(), id: "id2".to_string() }, -15),
+                DeviceState::new(Utc.timestamp_opt(3, 0).unwrap(), Signature::Named { name: "3".to_string(), id: "id3".to_string() }, -10),
+                DeviceState::new(Utc.timestamp_opt(4, 0).unwrap(), Signature::Named { name: "4".to_string(), id: "id4".to_string() }, -10),
             ]);
-        let expected_comparisons 
+        let expected_comparisons
             = vec![
-                (current.0[0].clone(), Comparison { 
+                (current.0[0].clone(), Comparison {
                     relative_age: Duration::seconds(9),
-                    rssi: RssiComparison::Louder 
+                    rssi: RssiComparison::Louder
                 }),
-                (current.0[1].clone(), Comparison { 
+                (current.0[1].clone(), Comparison {
                     relative_age: Duration::seconds(8),
                     rssi: RssiComparison::Quieter
                 }),
-                (current.0[2].clone(), Comparison { 
+                (current.0[2].clone(), Comparison {
                     relative_age: Duration::seconds(7),
-                    rssi: RssiComparison::Same 
+                    rssi: RssiComparison::Same
                 }),
-                (current.0[3].clone(), Comparison { 
+                (current.0[3].clone(), Comparison {
                     relative_age: Duration::seconds(6),
-                    rssi: RssiComparison::New 
+                    rssi: RssiComparison::New
                 }),
             ];
-        let actual_comparisons 
+        let actual_comparisons
             = current.compared_to(now, &previous);
 
         assert_eq!(just_rssi(&actual_comparisons), just_rssi(&expected_comparisons));
